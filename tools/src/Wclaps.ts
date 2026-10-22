@@ -99,6 +99,10 @@ export namespace Wclaps {
         return {ok: true, value: {uuid: await uuidOf(bytes), bytes, plugins}}
     }
 
+    // the extensions the Studio's import dialog offers, a bare module or a packed bundle
+    export const extensionOf = (bytes: Uint8Array): string =>
+        bytes[0] === 0x00 && bytes[1] === 0x61 && bytes[2] === 0x73 && bytes[3] === 0x6D ? ".wasm" : ".wclap.tar.gz"
+
     export const clapIncludeFromEnv = (): string => {
         const include = process.env.CLAP_INCLUDE
         if (isAbsent(include) || !fs.existsSync(path.join(include, "clap", "clap.h"))) {

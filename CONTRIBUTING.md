@@ -56,8 +56,9 @@ that is `-sSTANDALONE_WASM=1 --no-entry -sEXPORTED_FUNCTIONS=_malloc,_free -Wl,-
 example in plain C.
 
 The check builds your plugin on every pull request, loads it and lists its plugins in the summary comment. The
-built bundle is attached to the check's run as `wclap-bundles`: download it and load it into a WebCLAP device with
-Browse to try it before the merge.
+built bundle is attached to the check's run as `wclap-bundles` (`.wasm` for a bare module, `.wclap.tar.gz` for a
+bundle with a page). To try it before the merge, download and unzip it, add a WebCLAP device in the Studio and pick
+the file with Load Plugin, Import WebCLAP...
 
 ## meta.json
 
