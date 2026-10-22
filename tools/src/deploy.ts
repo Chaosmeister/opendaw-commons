@@ -4,7 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import {parseArgs} from "node:util"
 import SftpClient from "ssh2-sftp-client"
-import {asDefined, isDefined} from "@opendaw/lib-std"
+import {asDefined, isDefined, panic} from "@opendaw/lib-std"
 import {Build} from "./Build.ts"
 import {CloudIndex, DefaultCloudSources} from "./CloudIndex.ts"
 import {discover} from "./Layout.ts"
@@ -36,9 +36,13 @@ Build.run(discover(root, new Report()), report, {
 })
 console.log(`built ${report.items.length} items into ${out}`)
 if (values.upload) {
+    const host = asDefined(process.env.SFTP_HOST, "SFTP_HOST missing")
+    const problem = host.includes("://") ? "a scheme like sftp://" : /\s/.test(host) ? "whitespace"
+        : host.includes(":") ? "a port" : host.includes("/") ? "a path" : !/^[A-Za-z0-9.-]+$/.test(host) ? "invalid characters" : ""
+    if (problem !== "") {panic(`SFTP_HOST must be a bare host name like ssh.strato.de, it contains ${problem} (${host.length} characters).`)}
     const client = new SftpClient()
     await client.connect({
-        host: asDefined(process.env.SFTP_HOST, "SFTP_HOST missing"),
+        host,
         port: Number(process.env.SFTP_PORT ?? 22),
         username: asDefined(process.env.SFTP_USERNAME, "SFTP_USERNAME missing"),
         password: asDefined(process.env.SFTP_PASSWORD, "SFTP_PASSWORD missing")
