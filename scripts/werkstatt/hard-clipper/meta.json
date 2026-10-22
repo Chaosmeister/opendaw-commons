@@ -1,6 +1,6 @@
 {
   "name": "Hard Clipper",
-  "description": "Clips the signal at a threshold, with an optional soft knee.",
+  "description": "Clips the signal at a threshold, with an optional soft knee and a dry/wet mix.",
   "author": {
     "name": "André Michelle",
     "github": "andremichelle"
