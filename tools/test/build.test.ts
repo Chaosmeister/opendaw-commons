@@ -125,6 +125,11 @@ describe("WebCLAP index", () => {
         assert.equal(await Wclaps.uuidOf(bytes), UUID.toString(await UUID.sha256(bytes.slice().buffer)))
         assert.equal(await Wclaps.uuidOf(bytes), "1e6ed65d-77d6-464e-aaed-5a745ba5c498")
     })
+    it("names a downloaded bundle with an extension the Studio's import dialog accepts", () => {
+        assert.equal(Wclaps.extensionOf(new Uint8Array([0x00, 0x61, 0x73, 0x6D, 1, 0, 0, 0])), ".wasm")
+        assert.equal(Wclaps.extensionOf(new Uint8Array([0x1F, 0x8B, 8, 0])), ".wclap.tar.gz")
+        assert.equal(Wclaps.extensionOf(new Uint8Array()), ".wclap.tar.gz")
+    })
     it("writes a WclapIndex with one Community folder and the bundle under its id", async () => {
         const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
         const {out, uuid, index, entry} = await buildWith(wclapRepo(), bytes)
