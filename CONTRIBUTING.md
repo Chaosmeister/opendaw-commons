@@ -2,6 +2,10 @@
 
 Thanks for sharing your work with the openDAW community.
 
+New here? The [Community Scripts manual](https://opendaw.studio/manuals/community-scripts) walks you through your
+first pull request in the browser, step by step, and has a prompt that lets an AI assistant do it for you. This file
+is the reference for the details.
+
 ## One item per folder
 
 Every item lives in its own folder. The folder name is the item's slug.

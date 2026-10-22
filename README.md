@@ -29,4 +29,6 @@ schemas/                             JSON schemas for every meta.json
 Everything in this repo is [CC0 1.0](LICENSE), except WebCLAP source code, which may use any OSI approved
 license. Sounds a WebCLAP ships are always CC0.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to add your own.
+To add your own, follow the step by step guide in the
+[Community Scripts manual](https://opendaw.studio/manuals/community-scripts). [CONTRIBUTING.md](CONTRIBUTING.md) has
+the details.
