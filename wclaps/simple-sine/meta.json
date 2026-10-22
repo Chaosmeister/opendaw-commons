@@ -1,0 +1,14 @@
+{
+  "name": "Simple Sine",
+  "description": "A polyphonic sine synth with a gain parameter, the smallest WebCLAP that makes sound.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "example"
+  ],
+  "license": "CC0-1.0",
+  "credits": "Built on the CLAP headers by free-audio (MIT)."
+}
