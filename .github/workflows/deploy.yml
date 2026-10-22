@@ -13,9 +13,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # runs the contributors' build scripts, so it gets no secrets
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,13 +27,56 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: tools/package-lock.json
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.51
+          actions-cache-folder: emsdk-cache
+      - uses: actions/checkout@v4
+        with:
+          repository: free-audio/clap
+          ref: a47f6badb49d948fd009998f28309cdab78979c9
+          path: .clap
+          persist-credentials: false
       - name: Install
         working-directory: tools
         run: npm ci
       - name: Validator tests
         working-directory: tools
         run: npm test
-      - name: Validate, build and upload
+      - name: Validate and build
+        working-directory: tools
+        env:
+          CLAP_INCLUDE: ${{ github.workspace }}/.clap/include
+        run: npx tsx src/deploy.ts --root .. --build --out "$RUNNER_TEMP/community"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: community
+          path: ${{ runner.temp }}/community
+          retention-days: 7
+
+  # only uploads what the build job produced, with the tools of this commit
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: tools
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      - name: Install
+        working-directory: tools
+        run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: community
+          path: ${{ runner.temp }}/community
+      - name: Upload
         working-directory: tools
         env:
           SFTP_HOST: ${{ secrets.SFTP_HOST }}
@@ -40,4 +84,4 @@ jobs:
           SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
           SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
           REMOTE_PATH: ${{ vars.REMOTE_PATH || '/community' }}
-        run: npx tsx src/deploy.ts --root .. --out "$RUNNER_TEMP/community" --remote "$REMOTE_PATH" --upload
+        run: npx tsx src/deploy.ts --upload --out "$RUNNER_TEMP/community" --remote "$REMOTE_PATH"

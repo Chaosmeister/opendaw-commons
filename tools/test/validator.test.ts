@@ -112,7 +112,8 @@ describe("meta.json", () => {
     it("WebCLAPs take an SPDX license and credits", async () => {
         const files = (overrides: Record<string, unknown>) => ({
             "wclaps/synth/meta.json": meta(overrides),
-            "wclaps/synth/source/main.cpp": "int main() {}"
+            "wclaps/synth/source/main.cpp": "int main() {}",
+            "wclaps/synth/source/build.sh": "emcc main.cpp -o $OUT/module.wasm"
         })
         assert.deepEqual(messages(await validate(files({license: "MIT", credits: "Jane"}))), [])
         const noCredits = await validate(files({license: "MIT"}))
@@ -216,6 +217,10 @@ describe("wclaps", () => {
         expectErrors(missing, messages(missing), /Needs a source\/ folder/)
         const empty = await validate({"wclaps/synth/meta.json": meta({license: "MIT", credits: ""}), "wclaps/synth/source/.gitkeep": ""})
         expectErrors(empty, messages(empty), /source folder is empty/)
+    })
+    it("needs a build.sh in the source folder", async () => {
+        const report = await validate({"wclaps/synth/meta.json": meta({license: "MIT", credits: ""}), "wclaps/synth/source/synth.c": "int x;"})
+        expectErrors(report, messages(report), /wclaps\/synth\/source: Needs a build.sh/)
     })
 })
 

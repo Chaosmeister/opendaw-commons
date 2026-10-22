@@ -44,6 +44,21 @@ wclaps/<slug>/source/
 Only source code goes into git, never a built binary. The CI builds the bundle from `source/` with a pinned
 toolchain, so the plugin people load always matches the reviewed code.
 
+`source/build.sh` builds the plugin. The CI runs it with:
+
+1. Emscripten 3.1.51 (`emcc`) on the path.
+2. `$CLAP_INCLUDE`, the CLAP headers (free-audio/clap 1.2.10), the folder that holds `clap/clap.h`.
+3. `$OUT`, an empty folder. Write `module.wasm` there, plus your plugin page and its files if it has one.
+
+`module.wasm` exports `clap_entry`, `malloc` and its function table and imports nothing but WASI. With Emscripten
+that is `-sSTANDALONE_WASM=1 --no-entry -sEXPORTED_FUNCTIONS=_malloc,_free -Wl,--export=clap_entry`, and an empty
+`emscripten_notify_memory_growth` when memory may grow. [wclaps/simple-sine](wclaps/simple-sine) is a complete
+example in plain C.
+
+The check builds your plugin on every pull request, loads it and lists its plugins in the summary comment. The
+built bundle is attached to the check's run as `wclap-bundles`: download it and load it into a WebCLAP device with
+Browse to try it before the merge.
+
 ## meta.json
 
 You only write what a human knows. The CI computes everything else (id, declared parameters, size).

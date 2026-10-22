@@ -2,11 +2,12 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import {execFileSync} from "node:child_process"
-import {isDefined} from "@opendaw/lib-std"
+import {isAbsent, isDefined} from "@opendaw/lib-std"
 import {Item, scriptFileOf} from "./Layout.ts"
 import {Author, Meta} from "./Meta.ts"
 import {ProjectScripts} from "./ProjectScripts.ts"
 import {ItemDetails, Report} from "./Report.ts"
+import {BuiltWclap, WclapPlugin} from "./Wclaps.ts"
 
 export const INDEX_VERSION = 1
 export const API_LEVEL = 1
@@ -35,11 +36,33 @@ export type CommunityScript = CommunityCommon & {
 
 export type CommunityIndex<K extends string, T> = { readonly version: number, readonly updatedAt: string } & Record<K, ReadonlyArray<T>>
 
+export type CommunityWclap = {
+    readonly uuid: string
+    readonly slug: string
+    readonly name: string
+    readonly size: number
+    readonly url: string
+    readonly credits: string
+    readonly license: string
+    readonly plugins: ReadonlyArray<WclapPlugin>
+    readonly supersedes: ReadonlyArray<string>
+}
+
 export type BuildOptions = {
     readonly root: string
     readonly out: string
     readonly repository: string
     readonly now: Date
+    readonly wclaps?: ReadonlyMap<string, BuiltWclap>
+    readonly previousWclaps?: ReadonlyArray<CommunityWclap>
+}
+
+// a rebuilt plugin names its older builds, the Studio offers the update to projects that still use one
+const supersedesOf = (slug: string, uuid: string, previous: ReadonlyArray<CommunityWclap>): ReadonlyArray<string> => {
+    const before = previous.find(entry => entry.slug === slug)
+    if (isAbsent(before)) {return []}
+    const older = before.uuid === uuid ? before.supersedes : [...before.supersedes, before.uuid]
+    return Array.from(new Set(older)).filter(id => id !== uuid)
 }
 
 // group + slug never change after the merge, so an item keeps its uuid across updates
@@ -101,9 +124,23 @@ export namespace Build {
             return [{...commonOf(item, options, payload), target: item.target, language, details: detailsOf(item)}]
         })
         writeIndex(options.out, "scripts", "scripts", scripts.toSorted(byName), options.now)
+        const wclaps = items.filter(item => item.group === "wclaps").flatMap((item): ReadonlyArray<CommunityWclap> => {
+            const built = options.wclaps?.get(item.path)
+            if (isAbsent(built)) {return []}
+            const directory = path.join(options.out, "wclaps")
+            fs.mkdirSync(directory, {recursive: true})
+            fs.writeFileSync(path.join(directory, `${built.uuid}.wclap`), built.bytes)
+            const {name, license, credits} = readMeta(item)
+            return [{
+                uuid: built.uuid, slug: item.slug, name, size: built.bytes.byteLength,
+                url: `https://github.com/${options.repository}/tree/main/${item.path}`,
+                credits: credits ?? "", license, plugins: built.plugins,
+                supersedes: supersedesOf(item.slug, built.uuid, options.previousWclaps ?? [])
+            }]
+        })
         fs.mkdirSync(path.join(options.out, "wclaps"), {recursive: true})
         fs.writeFileSync(path.join(options.out, "wclaps", "index.json"), JSON.stringify({
-            version: 1, updatedAt: options.now.toISOString(), folders: [{name: "Community", wclaps: []}]
+            version: 1, updatedAt: options.now.toISOString(), folders: [{name: "Community", wclaps: wclaps.toSorted(byName)}]
         }, null, 2) + "\n")
     }
 }

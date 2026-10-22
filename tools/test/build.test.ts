@@ -5,7 +5,9 @@ import os from "node:os"
 import path from "node:path"
 import {execFileSync} from "node:child_process"
 import {makeRepo, meta} from "./helpers.ts"
-import {Build, CommunityScript, uuidOf} from "../src/Build.ts"
+import {Build, CommunityScript, CommunityWclap, uuidOf} from "../src/Build.ts"
+import {Wclaps} from "../src/Wclaps.ts"
+import {UUID} from "@opendaw/lib-std"
 import {discover, Item} from "../src/Layout.ts"
 import {Report} from "../src/Report.ts"
 import {Remote, Upload} from "../src/Upload.ts"
@@ -92,6 +94,67 @@ describe("Build", () => {
         const [b] = (await build(second)).read<{ scripts: ReadonlyArray<CommunityScript> }>("scripts").scripts
         assert.equal(a.uuid, b.uuid)
         assert.notEqual(a.url, b.url)
+    })
+})
+
+describe("WebCLAP index", () => {
+    const plugin = {clapId: "test.synth", name: "Synth", vendor: "Tester", features: ["instrument"]}
+    const wclapRepo = () => {
+        const root = makeRepo({
+            "wclaps/synth/meta.json": meta({name: "Synth", license: "MIT", credits: "Thanks"}),
+            "wclaps/synth/source/build.sh": "true"
+        })
+        git(root, ["init", "-q"])
+        commitAll(root, "init", "2026-01-01T00:00:00Z")
+        return root
+    }
+    const buildWith = async (root: string, bytes: Uint8Array, previousWclaps: ReadonlyArray<CommunityWclap> = []) => {
+        const report = Validator.run(root)
+        assert.deepEqual(report.errors, [])
+        const uuid = await Wclaps.uuidOf(bytes)
+        const out = fs.mkdtempSync(path.join(os.tmpdir(), "community-wclap-"))
+        Build.run(discover(root, new Report()), report, {
+            root, out, repository: "owner/repo", now: new Date("2026-10-22T12:00:00Z"),
+            wclaps: new Map([["wclaps/synth", {uuid, bytes, plugins: [plugin]}]]), previousWclaps
+        })
+        const index = JSON.parse(fs.readFileSync(path.join(out, "wclaps", "index.json"), "utf8"))
+        return {out, uuid, index, entry: index.folders[0].wclaps[0] as CommunityWclap}
+    }
+    it("ids a bundle exactly like the Studio: the first 16 bytes of its SHA-256, formatted with version 4 bits", async () => {
+        const bytes = new TextEncoder().encode("bundle")
+        assert.equal(await Wclaps.uuidOf(bytes), UUID.toString(await UUID.sha256(bytes.slice().buffer)))
+        assert.equal(await Wclaps.uuidOf(bytes), "1e6ed65d-77d6-464e-aaed-5a745ba5c498")
+    })
+    it("writes a WclapIndex with one Community folder and the bundle under its id", async () => {
+        const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
+        const {out, uuid, index, entry} = await buildWith(wclapRepo(), bytes)
+        assert.equal(index.version, 1)
+        assert.deepEqual(index.folders.map((folder: { name: string }) => folder.name), ["Community"])
+        assert.deepEqual(entry, {
+            uuid, slug: "synth", name: "Synth", size: 8, url: "https://github.com/owner/repo/tree/main/wclaps/synth",
+            credits: "Thanks", license: "MIT", plugins: [plugin], supersedes: []
+        })
+        assert.deepEqual(new Uint8Array(fs.readFileSync(path.join(out, "wclaps", `${uuid}.wclap`))), bytes)
+    })
+    it("lists older builds of the same slug in supersedes, without repeats or itself", async () => {
+        const root = wclapRepo()
+        const bytes = new Uint8Array([1, 2, 3])
+        const previous = (uuid: string, supersedes: ReadonlyArray<string>): CommunityWclap => ({
+            uuid, slug: "synth", name: "Synth", size: 3, url: "", credits: "", license: "MIT", plugins: [], supersedes
+        })
+        const fresh = await Wclaps.uuidOf(bytes)
+        assert.deepEqual((await buildWith(root, bytes, [previous("old-2", ["old-1"])])).entry.supersedes, ["old-1", "old-2"])
+        assert.deepEqual((await buildWith(root, bytes, [previous(fresh, ["old-1"])])).entry.supersedes, ["old-1"])
+        assert.deepEqual((await buildWith(root, bytes, [previous("old-2", ["old-1", "old-2", fresh])])).entry.supersedes, ["old-1", "old-2"])
+        assert.deepEqual((await buildWith(root, bytes, [{...previous("other", []), slug: "else"}])).entry.supersedes, [])
+    })
+    it("leaves an item out when it was not built", async () => {
+        const root = wclapRepo()
+        const report = Validator.run(root)
+        const out = fs.mkdtempSync(path.join(os.tmpdir(), "community-wclap-"))
+        Build.run(discover(root, new Report()), report, {root, out, repository: "owner/repo", now: new Date()})
+        const index = JSON.parse(fs.readFileSync(path.join(out, "wclaps", "index.json"), "utf8"))
+        assert.deepEqual(index.folders, [{name: "Community", wclaps: []}])
     })
 })
 

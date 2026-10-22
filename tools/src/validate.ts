@@ -4,17 +4,29 @@ import {parseArgs} from "node:util"
 import {isDefined} from "@opendaw/lib-std"
 import {Summary} from "./Summary.ts"
 import {Validator} from "./Validator.ts"
+import {Wclaps} from "./Wclaps.ts"
 
 const {values} = parseArgs({
     options: {
         root: {type: "string", default: "."},
         summary: {type: "string"},
         changed: {type: "string"},
+        "build-wclaps": {type: "boolean", default: false},
+        "wclap-out": {type: "string"}
     }
 })
 
 const root = path.resolve(values.root)
 const report = Validator.run(root)
+if (values["build-wclaps"]) {
+    const built = await Validator.buildWclaps(root, report, Wclaps.clapIncludeFromEnv())
+    const wclapOut = values["wclap-out"]
+    if (isDefined(wclapOut)) {
+        fs.mkdirSync(wclapOut, {recursive: true})
+        built.forEach(({uuid, bytes}, itemPath) =>
+            fs.writeFileSync(path.join(wclapOut, `${path.basename(itemPath)}-${uuid}.wclap`), bytes))
+    }
+}
 const annotate = process.env.GITHUB_ACTIONS === "true"
 for (const {path: where, message} of report.errors) {
     console.log(annotate ? `::error file=${where}::${message.replaceAll("\n", " ")}` : `✗ ${where}: ${message}`)

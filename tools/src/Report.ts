@@ -19,6 +19,13 @@ export class Report {
 
     item(summary: ItemSummary): void {this.#items.push(summary)}
 
+    addDetails(path: string, details: ItemDetails): void {
+        const index = this.#items.findIndex(item => item.path === path)
+        if (index === -1) {return}
+        const item = this.#items[index]
+        this.#items[index] = {...item, details: {...item.details, ...details}}
+    }
+
     get errors(): ReadonlyArray<Issue> {return this.#errors}
     get items(): ReadonlyArray<ItemSummary> {return this.#items}
     get ok(): boolean {return this.#errors.length === 0}

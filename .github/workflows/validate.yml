@@ -25,6 +25,16 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: tools/package-lock.json
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.51
+          actions-cache-folder: emsdk-cache
+      - uses: actions/checkout@v4
+        with:
+          repository: free-audio/clap
+          ref: a47f6badb49d948fd009998f28309cdab78979c9
+          path: .clap
+          persist-credentials: false
       - name: Install
         working-directory: tools
         run: npm ci
@@ -38,7 +48,18 @@ jobs:
         run: git diff --name-only "$BASE...$HEAD" > "$RUNNER_TEMP/changed.txt"
       - name: Validate
         working-directory: tools
-        run: npx tsx src/validate.ts --root .. --changed "$RUNNER_TEMP/changed.txt" --summary "$RUNNER_TEMP/summary.md"
+        env:
+          CLAP_INCLUDE: ${{ github.workspace }}/.clap/include
+        run: >-
+          npx tsx src/validate.ts --root .. --changed "$RUNNER_TEMP/changed.txt" --summary "$RUNNER_TEMP/summary.md"
+          --build-wclaps --wclap-out "$RUNNER_TEMP/wclaps"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wclap-bundles
+          path: ${{ runner.temp }}/wclaps
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Prepare comment
         if: always()
         env:

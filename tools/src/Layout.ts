@@ -126,6 +126,7 @@ export const checkFiles = (item: Item, report: Report): void => {
         } else {
             const size = sizeOfTree(source)
             if (size === 0) {report.error(`${item.path}/source`, "The source folder is empty.")}
+            if (!fs.existsSync(path.join(source, "build.sh"))) {report.error(`${item.path}/source`, "Needs a build.sh, see CONTRIBUTING.md.")}
             if (size > SizeLimits.wclapSource) {
                 report.error(`${item.path}/source`, `${formatBytes(size)} exceeds the limit of ${formatBytes(SizeLimits.wclapSource)}.`)
             }

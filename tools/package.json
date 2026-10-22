@@ -9,12 +9,13 @@
     "validate": "tsx src/validate.ts --root ..",
     "test": "tsx --test test/*.test.ts",
     "lint": "tsc --noEmit",
-    "build-indices": "tsx src/deploy.ts --root .. --out ../dist",
-    "deploy": "tsx src/deploy.ts --root .. --upload"
+    "build-indices": "tsx src/deploy.ts --root .. --build --out ../dist",
+    "deploy": "tsx src/deploy.ts --root .. --build --upload"
   },
   "dependencies": {
     "@opendaw/lib-std": "0.0.88",
     "@opendaw/studio-adapters": "0.3.9",
+    "@opendaw/studio-core-wasm": "0.0.22",
     "@opendaw/studio-scripting": "0.0.91",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",

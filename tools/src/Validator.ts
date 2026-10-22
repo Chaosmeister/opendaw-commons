@@ -6,6 +6,7 @@ import {checkFiles, discover, formatBytes, Item, scriptFileOf, sizeOfTree} from 
 import {Meta, MetaValidator} from "./Meta.ts"
 import {ProjectScripts} from "./ProjectScripts.ts"
 import {ItemDetails, Report} from "./Report.ts"
+import {BuiltWclap, Wclaps} from "./Wclaps.ts"
 
 const checkDeviceScript = (item: Item, report: Report): ItemDetails => {
     const name = scriptFileOf(item)
@@ -62,5 +63,25 @@ export namespace Validator {
         }
         checkProjectScripts(items.filter(item => item.target === "project"), report)
         return report
+    }
+
+    // needs emcc and the CLAP headers, the CI runs it, a local check without them skips it
+    export const buildWclaps = async (root: string, report: Report, clapInclude: string): Promise<ReadonlyMap<string, BuiltWclap>> => {
+        const built = new Map<string, BuiltWclap>()
+        const items = discover(root, new Report()).filter(item => item.group === "wclaps")
+        for (const item of items) {
+            if (report.errorsOf(item.path).length > 0) {continue}
+            const result = await Wclaps.build(item, clapInclude)
+            if (!result.ok) {
+                report.error(`${item.path}/source`, result.error)
+                continue
+            }
+            const {uuid, bytes, plugins} = result.value
+            built.set(item.path, result.value)
+            report.addDetails(item.path, {
+                id: uuid, bundle: formatBytes(bytes.byteLength), plugins: plugins.map(({clapId}) => clapId).join(" ")
+            })
+        }
+        return built
     }
 }
