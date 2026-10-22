@@ -1,6 +1,6 @@
 {
-  "name": "Deminix Random Synth",
-  "description": "A deterministic matrix synth. A hexadecimal matrix picks the sound, with tone shaping, shuffle buttons and patch snapshots in its own view.",
+  "name": "Deminix",
+  "description": "Dial in, paste or shuffle a seed, shape the tone and start creating!",
   "author": {
     "name": "Chaosmeister",
     "github": "Chaosmeister"
@@ -8,7 +8,8 @@
   "tags": [
     "synth",
     "generative",
-    "view"
+    "random",
+    "creative"
   ],
   "license": "CC0-1.0"
 }
