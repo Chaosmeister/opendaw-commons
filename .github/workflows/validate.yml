@@ -1,0 +1,60 @@
+name: Validate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      - name: Install
+        working-directory: tools
+        run: npm ci
+      - name: Validator tests
+        working-directory: tools
+        run: npm test
+      - name: Changed files
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: git diff --name-only "$BASE...$HEAD" > "$RUNNER_TEMP/changed.txt"
+      - name: Validate
+        working-directory: tools
+        run: npx tsx src/validate.ts --root .. --changed "$RUNNER_TEMP/changed.txt" --summary "$RUNNER_TEMP/summary.md"
+      - name: Prepare comment
+        if: always()
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/comment"
+          if [ -f "$RUNNER_TEMP/summary.md" ]; then
+            cp "$RUNNER_TEMP/summary.md" "$RUNNER_TEMP/comment/summary.md"
+          else
+            printf '<!-- opendaw-commons-check -->\n## ❌ openDAW Commons check crashed\n\nSee the workflow log.\n' > "$RUNNER_TEMP/comment/summary.md"
+          fi
+          echo "$PR" > "$RUNNER_TEMP/comment/pr.txt"
+          cat "$RUNNER_TEMP/comment/summary.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: commons-check
+          path: ${{ runner.temp }}/comment
+          retention-days: 7

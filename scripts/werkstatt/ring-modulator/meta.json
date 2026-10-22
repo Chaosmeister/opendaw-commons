@@ -1,0 +1,12 @@
+{
+  "name": "Ring Modulator",
+  "description": "Multiplies the signal with a sine oscillator.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "modulation"
+  ],
+  "license": "CC0-1.0"
+}

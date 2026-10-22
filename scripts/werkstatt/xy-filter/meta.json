@@ -1,0 +1,13 @@
+{
+  "name": "XY Filter",
+  "description": "A resonant filter played from an XY pad that draws its response curve.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "filter",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

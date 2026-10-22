@@ -1,0 +1,13 @@
+{
+  "name": "Chaos Pad",
+  "description": "An XY performance pad with several effect programs.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "performance",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

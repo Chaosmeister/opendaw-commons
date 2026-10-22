@@ -1,0 +1,12 @@
+{
+  "name": "Hard Clipper",
+  "description": "Clips the signal at a threshold, with an optional soft knee.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "distortion"
+  ],
+  "license": "CC0-1.0"
+}

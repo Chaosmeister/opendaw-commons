@@ -1,0 +1,14 @@
+{
+  "name": "Wavetable",
+  "description": "A wavetable synth with unison, detune, bend and a 3D frame view.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "wavetable",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

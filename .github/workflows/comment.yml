@@ -1,0 +1,41 @@
+name: Comment
+
+# runs in the base repo context, so pull requests from forks get their summary too, it never checks out PR code
+on:
+  workflow_run:
+    workflows: [Validate]
+    types: [completed]
+
+permissions:
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: commons-check
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: comment
+      - name: Post or update the summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(head -c 16 comment/pr.txt | tr -d '[:space:]')
+          [[ "$pr" =~ ^[0-9]+$ ]] || { echo "Invalid pull request number"; exit 1; }
+          [ "$(gh api "repos/$REPO/pulls/$pr" --jq .head.sha)" = "$HEAD_SHA" ] || { echo "Pull request $pr moved on, skipping"; exit 0; }
+          marker='<!-- opendaw-commons-check -->'
+          { echo "$marker"; head -c 60000 comment/summary.md | grep -v -F "$marker"; } > body.md
+          id=$(gh api "repos/$REPO/issues/$pr/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@body.md > /dev/null
+          else
+            gh api -X POST "repos/$REPO/issues/$pr/comments" -F body=@body.md > /dev/null
+          fi

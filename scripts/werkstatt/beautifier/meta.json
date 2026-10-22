@@ -1,0 +1,12 @@
+{
+  "name": "Beautifier",
+  "description": "A transparent mastering enhancer with warmth, air, punch and stereo width.",
+  "author": {
+    "name": "Chaosmeister",
+    "github": "Chaosmeister"
+  },
+  "tags": [
+    "mastering"
+  ],
+  "license": "CC0-1.0"
+}

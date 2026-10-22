@@ -1,0 +1,12 @@
+{
+  "name": "Echo / Note Delay",
+  "description": "Repeats every note with a delay and a velocity decay.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "delay"
+  ],
+  "license": "CC0-1.0"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Audio Region",
+  "description": "Generates a chirp, imports it as a sample and places it on an audio track.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "sample",
+    "audio"
+  ],
+  "license": "CC0-1.0"
+}

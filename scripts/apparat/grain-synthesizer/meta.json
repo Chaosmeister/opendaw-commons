@@ -1,0 +1,14 @@
+{
+  "name": "Grain Synthesizer",
+  "description": "Plays clouds of grains from a sample with density, size, spread and pitch.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "granular",
+    "sample"
+  ],
+  "license": "CC0-1.0"
+}

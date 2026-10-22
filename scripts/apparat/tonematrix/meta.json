@@ -1,0 +1,14 @@
+{
+  "name": "Tonematrix",
+  "description": "A port of the Tonematrix toy: a 16 by 16 step grid of sine voices with an echo.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "sequencer",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

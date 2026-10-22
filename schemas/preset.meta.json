@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://assets.opendaw.studio/community/schemas/preset.meta.json",
+  "title": "presets/<slug>/meta.json",
+  "type": "object",
+  "$ref": "common.meta.json",
+  "required": ["license"],
+  "properties": {
+    "license": {"const": "CC0-1.0"}
+  },
+  "unevaluatedProperties": false
+}

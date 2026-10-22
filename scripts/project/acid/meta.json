@@ -1,0 +1,13 @@
+{
+  "name": "Acid",
+  "description": "A seeded 303 line with Euclidean 808/909 drums, laid out as a 64-cycle arrangement.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "acid",
+    "generative"
+  ],
+  "license": "CC0-1.0"
+}

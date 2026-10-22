@@ -1,0 +1,14 @@
+{
+  "name": "303 Sequencer",
+  "description": "Generates a seeded 303 style pattern with slides, accents and rests.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "sequencer",
+    "acid",
+    "generative"
+  ],
+  "license": "CC0-1.0"
+}

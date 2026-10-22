@@ -1,0 +1,14 @@
+{
+  "name": "Parametric EQ",
+  "description": "A six band parametric equalizer with a live spectrum view.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "eq",
+    "filter",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

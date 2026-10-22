@@ -1,0 +1,12 @@
+{
+  "name": "Cleanup",
+  "description": "Removes empty tracks, muted content, regions beyond the end and unused aux units.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "utility"
+  ],
+  "license": "CC0-1.0"
+}

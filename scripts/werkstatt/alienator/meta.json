@@ -1,0 +1,13 @@
+{
+  "name": "Alienator",
+  "description": "Chaos feedback, wavefolding, bit crushing, decimation and ring modulation in one chain.",
+  "author": {
+    "name": "Chaosmeister",
+    "github": "Chaosmeister"
+  },
+  "tags": [
+    "distortion",
+    "lofi"
+  ],
+  "license": "CC0-1.0"
+}

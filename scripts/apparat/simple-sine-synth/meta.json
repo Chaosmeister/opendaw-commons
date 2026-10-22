@@ -1,0 +1,12 @@
+{
+  "name": "Simple Sine Synth",
+  "description": "A polyphonic sine synth with attack and release.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth"
+  ],
+  "license": "CC0-1.0"
+}

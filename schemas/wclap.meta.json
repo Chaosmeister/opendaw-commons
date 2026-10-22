@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://assets.opendaw.studio/community/schemas/wclap.meta.json",
+  "title": "wclaps/<slug>/meta.json",
+  "type": "object",
+  "$ref": "common.meta.json",
+  "required": ["license", "credits"],
+  "properties": {
+    "license": {
+      "description": "SPDX id of an OSI approved license for the source code, sounds are always CC0",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9.+-]+$"
+    },
+    "credits": {"type": "string", "maxLength": 500}
+  },
+  "unevaluatedProperties": false
+}

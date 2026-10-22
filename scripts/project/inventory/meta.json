@@ -1,0 +1,12 @@
+{
+  "name": "Inventory",
+  "description": "Counts everything in the current project and shows the result in a dialog.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "utility"
+  ],
+  "license": "CC0-1.0"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Step Arp",
+  "description": "An arpeggiator with editable steps for velocity, gate and transpose.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "arpeggiator",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

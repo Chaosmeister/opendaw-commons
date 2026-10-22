@@ -1,0 +1,12 @@
+{
+  "name": "Probability Gate",
+  "description": "Lets each note through with a given chance.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "random"
+  ],
+  "license": "CC0-1.0"
+}

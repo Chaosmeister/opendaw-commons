@@ -1,0 +1,13 @@
+{
+  "name": "Mixdown",
+  "description": "Renders the current project, normalizes the peak and saves it as a wav file.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "utility",
+    "export"
+  ],
+  "license": "CC0-1.0"
+}

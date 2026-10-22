@@ -1,0 +1,14 @@
+{
+  "name": "TB-303 Bass Line",
+  "description": "A 303 style bass voice with cutoff, resonance, envelope mod, decay and accent.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "bass",
+    "acid"
+  ],
+  "license": "CC0-1.0"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Pitch",
+  "description": "Transposes notes by octaves, semitones and cents.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "pitch"
+  ],
+  "license": "CC0-1.0"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Wave Draw",
+  "description": "A synth that plays a single cycle waveform you draw yourself.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

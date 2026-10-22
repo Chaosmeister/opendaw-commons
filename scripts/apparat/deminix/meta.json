@@ -1,0 +1,12 @@
+{
+  "name": "Deminix Random Synth",
+  "description": "A deterministic matrix synth with tremolo, vibrato and frequency modulation.",
+  "author": {
+    "name": "Chaosmeister",
+    "github": "Chaosmeister"
+  },
+  "tags": [
+    "synth"
+  ],
+  "license": "CC0-1.0"
+}

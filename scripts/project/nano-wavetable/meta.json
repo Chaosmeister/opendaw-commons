@@ -1,0 +1,13 @@
+{
+  "name": "Nano Wavetable",
+  "description": "Builds a PADsynth wavetable and plays it with the Nano instrument.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "wavetable",
+    "sample"
+  ],
+  "license": "CC0-1.0"
+}

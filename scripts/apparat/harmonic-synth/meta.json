@@ -1,0 +1,14 @@
+{
+  "name": "Harmonic Synth",
+  "description": "An additive synth with drawable partial levels.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "additive",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

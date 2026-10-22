@@ -1,0 +1,13 @@
+{
+  "name": "Sidechain Mixer",
+  "description": "Mixes the input with two sidechain sources.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "sidechain",
+    "mixing"
+  ],
+  "license": "CC0-1.0"
+}

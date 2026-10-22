@@ -1,0 +1,13 @@
+{
+  "name": "Pulsate",
+  "description": "Growing rings play a note whenever they touch, place the circles in its view.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "generative",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}

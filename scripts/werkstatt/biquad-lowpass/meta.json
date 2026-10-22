@@ -1,0 +1,12 @@
+{
+  "name": "Biquad Lowpass",
+  "description": "A resonant biquad lowpass filter.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "filter"
+  ],
+  "license": "CC0-1.0"
+}

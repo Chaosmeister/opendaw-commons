@@ -1,0 +1,12 @@
+{
+  "name": "Random Humanizer",
+  "description": "Adds random timing and velocity variation to notes.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "humanize"
+  ],
+  "license": "CC0-1.0"
+}
