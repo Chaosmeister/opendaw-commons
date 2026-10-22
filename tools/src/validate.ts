@@ -24,7 +24,7 @@ if (values["build-wclaps"]) {
     if (isDefined(wclapOut)) {
         fs.mkdirSync(wclapOut, {recursive: true})
         built.forEach(({uuid, bytes}, itemPath) =>
-            fs.writeFileSync(path.join(wclapOut, `${path.basename(itemPath)}-${uuid}.wclap`), bytes))
+            fs.writeFileSync(path.join(wclapOut, `${path.basename(itemPath)}-${uuid}${Wclaps.extensionOf(bytes)}`), bytes))
     }
 }
 const annotate = process.env.GITHUB_ACTIONS === "true"
