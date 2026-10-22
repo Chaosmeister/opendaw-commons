@@ -1,12 +1,14 @@
 {
   "name": "Deminix Random Synth",
-  "description": "A deterministic matrix synth with tremolo, vibrato and frequency modulation.",
+  "description": "A deterministic matrix synth. A hexadecimal matrix picks the sound, with tone shaping, shuffle buttons and patch snapshots in its own view.",
   "author": {
     "name": "Chaosmeister",
     "github": "Chaosmeister"
   },
   "tags": [
-    "synth"
+    "synth",
+    "generative",
+    "view"
   ],
   "license": "CC0-1.0"
 }
