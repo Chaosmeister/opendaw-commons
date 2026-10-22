@@ -7,7 +7,7 @@ const itemOf = (file: string): string => {
     return (parts[0] === "scripts" ? parts.slice(0, 3) : parts.slice(0, 2)).join("/")
 }
 
-const isContent = (file: string): boolean => /^(presets|scripts|wclaps)\/[^/]+\//.test(file)
+const isContent = (file: string): boolean => /^(scripts|wclaps)\/[^/]+\//.test(file)
 
 export namespace Summary {
     export const MARKER = "<!-- opendaw-commons-check -->"

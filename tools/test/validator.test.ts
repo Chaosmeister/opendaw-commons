@@ -1,7 +1,6 @@
 import {describe, it} from "node:test"
 import assert from "node:assert/strict"
-import {asset, EmptyCloud, exampleScript, messages, meta, validate} from "./helpers.ts"
-import {CloudIndex} from "../src/CloudIndex.ts"
+import {exampleScript, messages, meta, validate} from "./helpers.ts"
 import {ProjectScripts} from "../src/ProjectScripts.ts"
 import {Summary} from "../src/Summary.ts"
 
@@ -19,12 +18,12 @@ describe("layout", () => {
         assert.equal(report.items.length, 0)
     })
     it("ignores .gitkeep in empty group folders", async () => {
-        const report = await validate({"presets/.gitkeep": "", "scripts/project/.gitkeep": ""})
+        const report = await validate({"wclaps/.gitkeep": "", "scripts/project/.gitkeep": ""})
         assert.deepEqual(messages(report), [])
     })
     it("rejects slugs that are not lowercase-hyphenated", async () => {
         for (const slug of ["Acid", "acid_bass", "acid--bass", "-acid", "acid-", "a".repeat(65)]) {
-            const report = await validate({[`presets/${slug}/meta.json`]: meta()})
+            const report = await validate({[`wclaps/${slug}/meta.json`]: meta()})
             expectErrors(report, messages(report), /not a valid slug/)
         }
     })
@@ -34,13 +33,13 @@ describe("layout", () => {
         assert.deepEqual(messages(report), [])
     })
     it("rejects unknown script targets and loose files", async () => {
-        const report = await validate({"scripts/vst/thing/meta.json": meta(), "presets/readme.txt": "hello"})
+        const report = await validate({"scripts/vst/thing/meta.json": meta(), "wclaps/readme.txt": "hello"})
         const list = messages(report)
-        expectErrors(report, list, /scripts\/vst: Unknown script target/, /presets\/readme.txt: Only item folders/)
+        expectErrors(report, list, /scripts\/vst: Unknown script target/, /wclaps\/readme.txt: Only item folders/)
     })
     it("requires meta.json and the payload", async () => {
-        const report = await validate({"presets/empty/.keep": "", "presets/bare/meta.json": meta()})
-        expectErrors(report, messages(report), /presets\/empty: Missing meta.json/, /presets\/bare: Missing preset.odp/)
+        const report = await validate({"scripts/project/empty/.keep": "", "wclaps/bare/meta.json": meta({license: "MIT", credits: ""})})
+        expectErrors(report, messages(report), /scripts\/project\/empty: Missing meta.json/, /wclaps\/bare: Needs a source\/ folder/)
     })
     it("rejects unexpected files inside an item", async () => {
         const report = await validate({
@@ -211,50 +210,6 @@ describe("project scripts", () => {
     })
 })
 
-describe("presets", () => {
-    const preset = (bytes: Uint8Array, cloud: CloudIndex = EmptyCloud) =>
-        validate({"presets/demo/meta.json": meta(), "presets/demo/preset.odp": bytes}, cloud)
-    it("accepts a stock effect preset and reports its device", async () => {
-        const report = await preset(asset("delay.odp"))
-        assert.deepEqual(messages(report), [])
-        assert.equal(report.items[0].details.category, "audio-effect")
-        assert.equal(report.items[0].details.device, "Delay")
-    })
-    it("checks scripts embedded in a preset", async () => {
-        const report = await preset(asset("werkstatt.odp"))
-        assert.deepEqual(messages(report), [])
-        assert.equal(report.items[0].details.scripts, 1)
-    })
-    it("rejects samples that are not in the cloud and accepts them once they are", async () => {
-        const missing = await preset(asset("playfield.odp"))
-        const list = messages(missing)
-        expectErrors(missing, list, /AudioFileBox [0-9a-f-]{36} \(".*"\) is not an openDAW cloud sample/)
-        const uuids = list.map(message => /AudioFileBox ([0-9a-f-]{36})/.exec(message)?.[1]).filter(uuid => uuid !== undefined)
-        assert.equal(uuids.length, 16)
-        const present = await preset(asset("playfield.odp"), {...EmptyCloud, samples: new Set(uuids)})
-        assert.deepEqual(messages(present), [])
-    })
-    it("rejects soundfonts and WebCLAPs that are not in the cloud", async () => {
-        const soundfont = await preset(asset("soundfont.odp"))
-        expectErrors(soundfont, messages(soundfont), /SoundfontFileBox .* is not an openDAW cloud soundfont/)
-        const wclap = await preset(asset("wclap.odp"))
-        expectErrors(wclap, messages(wclap), /WclapInstrumentBox .* uses the WebCLAP "opfs:74309023/)
-        const known = await preset(asset("wclap.odp"), {...EmptyCloud, wclaps: new Set(["74309023-461a-4633-8f54-39727eb8c260"])})
-        assert.deepEqual(messages(known), [])
-    })
-    it("rejects files that are not presets", async () => {
-        const garbage = await preset(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9]))
-        expectErrors(garbage, messages(garbage), /Not an openDAW preset/)
-        const empty = await preset(new Uint8Array())
-        expectErrors(empty, messages(empty), /Not an openDAW preset/)
-    })
-    it("rejects a truncated preset", async () => {
-        const bytes = asset("delay.odp")
-        const report = await preset(bytes.slice(0, bytes.length - 100))
-        expectErrors(report, messages(report), /Could not decode the preset/)
-    })
-})
-
 describe("wclaps", () => {
     it("needs a non-empty source folder", async () => {
         const missing = await validate({"wclaps/synth/meta.json": meta({license: "MIT", credits: ""})})
@@ -272,17 +227,17 @@ describe("summary", () => {
             "scripts/project/two/meta.json": meta({name: "Two | Pipe"}),
             "scripts/project/two/script.ts": "// two\n"
         })
-        const markdown = Summary.markdown(report, ["scripts/project/two/meta.json", "presets/gone/preset.odp", "README.md"])
+        const markdown = Summary.markdown(report, ["scripts/project/two/meta.json", "scripts/apparat/gone/script.js", "README.md"])
         assert.ok(markdown.startsWith(Summary.MARKER))
         assert.match(markdown, /✅ openDAW Commons check passed/)
         assert.match(markdown, /`scripts\/project\/two` \| Two \\\| Pipe/)
         assert.doesNotMatch(markdown, /scripts\/project\/one/)
-        assert.match(markdown, /### Removed\n\n- `presets\/gone`/)
+        assert.match(markdown, /### Removed\n\n- `scripts\/apparat\/gone`/)
     })
     it("lists every error when the check fails", async () => {
-        const report = await validate({"presets/Bad/meta.json": meta()})
+        const report = await validate({"wclaps/Bad/meta.json": meta()})
         const markdown = Summary.markdown(report, [])
         assert.match(markdown, /❌ openDAW Commons check failed/)
-        assert.match(markdown, /- `presets\/Bad` "Bad" is not a valid slug/)
+        assert.match(markdown, /- `wclaps\/Bad` "Bad" is not a valid slug/)
     })
 })

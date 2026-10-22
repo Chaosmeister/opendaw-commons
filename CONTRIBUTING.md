@@ -13,15 +13,6 @@ Every item lives in its own folder. The folder name is the item's slug.
 
 ## Groups
 
-### Presets
-
-```
-presets/<slug>/meta.json
-presets/<slug>/preset.odp
-```
-
-Save the preset from the Studio and rename it to `preset.odp`. The device and category are read from the file.
-
 ### Scripts
 
 ```
@@ -55,7 +46,7 @@ toolchain, so the plugin people load always matches the reviewed code.
 
 ## meta.json
 
-You only write what a human knows. The CI computes everything else (id, devices, used samples, size).
+You only write what a human knows. The CI computes everything else (id, declared parameters, size).
 
 ```json
 {
@@ -76,20 +67,13 @@ You only write what a human knows. The CI computes everything else (id, devices,
 
 The schemas are in [schemas/](schemas).
 
-## Samples and soundfonts
-
-Presets may only use samples, soundfonts and WebCLAPs from the openDAW cloud library. A file that uses your
-own local sample fails the check, and the message names the box and sample id. Uploading your own samples and
-soundfonts comes in a later iteration.
-
 ## Size limits
 
 GitHub refuses files over 100 MB and warns at 50 MB. Git keeps every replaced file in its history forever, so keep
 items small. The validator enforces these limits per item.
 
-1. Preset `preset.odp`: 1 MB
-2. Script: 256 KB
-3. WebCLAP `source/`: 20 MB
+1. Script: 256 KB
+2. WebCLAP `source/`: 20 MB
 
 ## License
 

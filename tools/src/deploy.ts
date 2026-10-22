@@ -1,4 +1,3 @@
-import "./NodeEnvironment.ts"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -6,7 +5,6 @@ import {parseArgs} from "node:util"
 import SftpClient from "ssh2-sftp-client"
 import {asDefined, isDefined, panic} from "@opendaw/lib-std"
 import {Build} from "./Build.ts"
-import {CloudIndex, DefaultCloudSources} from "./CloudIndex.ts"
 import {discover} from "./Layout.ts"
 import {Report} from "./Report.ts"
 import {sftpRemote, Upload} from "./Upload.ts"
@@ -23,8 +21,7 @@ const {values} = parseArgs({
 
 const root = path.resolve(values.root)
 const out = isDefined(values.out) ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "community-"))
-const cloud = await CloudIndex.fetchAll(DefaultCloudSources)
-const report = await Validator.run(root, cloud)
+const report = Validator.run(root)
 if (!report.ok) {
     report.errors.forEach(({path: where, message}) => console.error(`✗ ${where}: ${message}`))
     console.error(`${report.errors.length} errors, nothing was deployed.`)

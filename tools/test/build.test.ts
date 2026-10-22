@@ -4,8 +4,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {execFileSync} from "node:child_process"
-import {asset, EmptyCloud, makeRepo, meta} from "./helpers.ts"
-import {Build, CommunityPreset, CommunityScript, uuidOf} from "../src/Build.ts"
+import {makeRepo, meta} from "./helpers.ts"
+import {Build, CommunityScript, uuidOf} from "../src/Build.ts"
 import {discover, Item} from "../src/Layout.ts"
 import {Report} from "../src/Report.ts"
 import {Remote, Upload} from "../src/Upload.ts"
@@ -22,7 +22,7 @@ const commitAll = (root: string, message: string, date: string): void => {
 }
 
 const build = async (root: string) => {
-    const report = await Validator.run(root, EmptyCloud)
+    const report = Validator.run(root)
     assert.deepEqual(report.errors, [])
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "community-out-"))
     Build.run(discover(root, new Report()), report, {root, out, repository: "owner/repo", now: new Date("2026-10-22T12:00:00Z")})
@@ -33,21 +33,19 @@ const build = async (root: string) => {
 const PROJECT_SCRIPT = "import {Api} from \"@opendaw/studio-scripting\"\n\nconst openDAW: Api = undefined as never\n\n// Hello\nconsole.log(openDAW)\n"
 
 describe("uuidOf", () => {
-    const item = (itemPath: string): Item => ({group: "presets", target: undefined, slug: path.basename(itemPath), path: itemPath, absolute: ""})
+    const item = (itemPath: string): Item => ({group: "wclaps", target: undefined, slug: path.basename(itemPath), path: itemPath, absolute: ""})
     it("is stable, well formed and differs per path", () => {
-        const first = uuidOf(item("presets/acid"))
-        assert.equal(first, uuidOf(item("presets/acid")))
+        const first = uuidOf(item("wclaps/acid"))
+        assert.equal(first, uuidOf(item("wclaps/acid")))
         assert.match(first, /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
-        assert.notEqual(first, uuidOf(item("presets/acid-2")))
+        assert.notEqual(first, uuidOf(item("wclaps/acid-2")))
         assert.notEqual(uuidOf(item("scripts/apparat/acid")), uuidOf(item("scripts/werkstatt/acid")))
     })
 })
 
 describe("Build", () => {
-    it("writes presets, scripts and an empty WebCLAP folder", async () => {
+    it("writes scripts and an empty WebCLAP folder", async () => {
         const root = makeRepo({
-            "presets/echo/meta.json": meta({name: "Echo"}),
-            "presets/echo/preset.odp": asset("delay.odp"),
             "scripts/project/hello/meta.json": meta({name: "Hello"}),
             "scripts/project/hello/script.ts": PROJECT_SCRIPT,
             "scripts/werkstatt/clip/meta.json": meta({name: "Clip"}),
@@ -58,24 +56,19 @@ describe("Build", () => {
         fs.appendFileSync(path.join(root, "scripts/project/hello/script.ts"), "// more\n")
         commitAll(root, "second", "2026-02-01T00:00:00Z")
         const {out, read} = await build(root)
-        const presets = read<{ version: number, updatedAt: string, presets: ReadonlyArray<CommunityPreset> }>("presets")
-        assert.equal(presets.version, 1)
-        assert.equal(presets.updatedAt, "2026-10-22T12:00:00.000Z")
-        assert.equal(presets.presets.length, 1)
-        const [echo] = presets.presets
-        assert.equal(echo.category, "audio-effect")
-        assert.equal(echo.device, "Delay")
-        assert.equal(echo.hasTimeline, false)
-        assert.equal(echo.slug, "echo")
-        assert.equal(echo.source, "https://github.com/owner/repo/tree/main/presets/echo")
-        assert.equal(echo.created, Date.parse("2026-01-01T00:00:00Z"))
-        assert.equal(echo.modified, Date.parse("2026-01-01T00:00:00Z"))
-        assert.match(echo.url, new RegExp(`^${echo.uuid}-[0-9a-f]{12}\\.odp$`))
-        assert.deepEqual(new Uint8Array(fs.readFileSync(path.join(out, "presets", echo.url))), asset("delay.odp"))
-        const scripts = read<{ scripts: ReadonlyArray<CommunityScript> }>("scripts").scripts
+        const index = read<{ version: number, updatedAt: string, scripts: ReadonlyArray<CommunityScript> }>("scripts")
+        assert.equal(index.version, 1)
+        assert.equal(index.updatedAt, "2026-10-22T12:00:00.000Z")
+        assert.ok(!fs.existsSync(path.join(out, "presets")))
+        const scripts = index.scripts
         assert.deepEqual(scripts.map(script => script.name), ["Clip", "Hello"])
         const hello = scripts[1]
         assert.equal(hello.target, "project")
+        assert.equal(hello.slug, "hello")
+        assert.equal(hello.source, "https://github.com/owner/repo/tree/main/scripts/project/hello")
+        assert.match(hello.url, new RegExp(`^${hello.uuid}-[0-9a-f]{12}\\.ts$`))
+        assert.equal(scripts[0].created, Date.parse("2026-01-01T00:00:00Z"))
+        assert.equal(scripts[0].modified, Date.parse("2026-01-01T00:00:00Z"))
         assert.equal(hello.language, "ts")
         assert.equal(hello.created, Date.parse("2026-01-01T00:00:00Z"))
         assert.equal(hello.modified, Date.parse("2026-02-01T00:00:00Z"))
@@ -100,16 +93,6 @@ describe("Build", () => {
         assert.equal(a.uuid, b.uuid)
         assert.notEqual(a.url, b.url)
     })
-    it("tells an instrument preset from a rack by its effects", async () => {
-        const root = makeRepo({
-            "presets/keys/meta.json": meta(), "presets/keys/preset.odp": asset("soundfont.odp"),
-            "presets/beats/meta.json": meta(), "presets/beats/preset.odp": asset("playfield.odp")
-        })
-        const report = await Validator.run(root, EmptyCloud)
-        const categories = report.items.map(item => [item.path, item.details.category, item.details.device ?? item.details.instrument])
-        assert.deepEqual(categories.find(([itemPath]) => itemPath === "presets/keys")?.slice(1), ["instrument", "Soundfont"])
-        assert.equal(categories.find(([itemPath]) => itemPath === "presets/beats")?.[2], "Playfield")
-    })
 })
 
 describe("Upload", () => {
@@ -131,7 +114,7 @@ describe("Upload", () => {
     }
     const local = (): string => {
         const from = fs.mkdtempSync(path.join(os.tmpdir(), "upload-"))
-        for (const file of ["presets/a.odp", "presets/b.odp", "presets/index.json", "scripts/c.js", "scripts/index.json"]) {
+        for (const file of ["scripts/a.js", "scripts/b.ts", "scripts/index.json", "wclaps/c.tar.gz", "wclaps/index.json"]) {
             fs.mkdirSync(path.join(from, path.dirname(file)), {recursive: true})
             fs.writeFileSync(path.join(from, file), file)
         }
@@ -142,15 +125,15 @@ describe("Upload", () => {
         const result = await Upload.run(local(), "/community", remote)
         assert.equal(result.skipped, 0)
         const puts = calls.filter(call => call.startsWith("put "))
-        assert.deepEqual(puts.slice(-2), ["put /community/presets/index.json", "put /community/scripts/index.json"])
+        assert.deepEqual(puts.slice(-2), ["put /community/scripts/index.json", "put /community/wclaps/index.json"])
         assert.equal(puts.length, 5)
-        assert.ok(calls.includes("mkdir /community/presets"))
+        assert.ok(calls.includes("mkdir /community/scripts"))
     })
     it("skips payloads that are already there but always replaces the indices", async () => {
-        const {remote, calls} = memoryRemote({"/community/presets": ["a.odp", "index.json"]})
+        const {remote, calls} = memoryRemote({"/community/scripts": ["a.js", "index.json"]})
         const result = await Upload.run(local(), "/community", remote)
         assert.equal(result.skipped, 1)
-        assert.ok(!calls.includes("put /community/presets/a.odp"))
-        assert.ok(calls.includes("put /community/presets/index.json"))
+        assert.ok(!calls.includes("put /community/scripts/a.js"))
+        assert.ok(calls.includes("put /community/scripts/index.json"))
     })
 })

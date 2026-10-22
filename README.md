@@ -1,6 +1,6 @@
 # openDAW Commons
 
-Community content for [openDAW](https://opendaw.studio): presets, scripts and WebCLAP plugins.
+Community content for [openDAW](https://opendaw.studio): scripts and WebCLAP plugins.
 
 Anyone can contribute with a pull request. After a merge the content shows up in the Studio in the "Community"
 folder, with no Studio release needed.
@@ -17,7 +17,6 @@ The Studio never reads this repo directly. It only reads the generated indices.
 ## Layout
 
 ```
-presets/<slug>/                      meta.json, preset.odp
 scripts/<target>/<slug>/             meta.json, script.ts or script.js
 wclaps/<slug>/                       meta.json, source/
 schemas/                             JSON schemas for every meta.json

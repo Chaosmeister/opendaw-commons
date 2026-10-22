@@ -27,14 +27,6 @@ export type CommunityCommon = {
     readonly minApi: number
 }
 
-export type CommunityPreset = CommunityCommon & {
-    readonly category: string
-    readonly device?: string
-    readonly instrument?: string
-    readonly hasTimeline: boolean
-    readonly details: ItemDetails
-}
-
 export type CommunityScript = CommunityCommon & {
     readonly target: string
     readonly language: "ts" | "js"
@@ -99,19 +91,6 @@ export namespace Build {
     export const run = (items: ReadonlyArray<Item>, report: Report, options: BuildOptions): void => {
         const detailsOf = (item: Item): ItemDetails => report.items.find(entry => entry.path === item.path)?.details ?? {}
         const byName = (left: { name: string }, right: { name: string }) => left.name.localeCompare(right.name)
-        const presets = items.filter(item => item.group === "presets").map((item): CommunityPreset => {
-            const bytes = fs.readFileSync(path.join(item.absolute, "preset.odp"))
-            const payload = writePayload(options.out, "presets", uuidOf(item), "odp", bytes)
-            const {category, device, instrument, hasTimeline, ...details} = detailsOf(item)
-            return {
-                ...commonOf(item, options, payload),
-                category: String(category),
-                ...(typeof device === "string" ? {device} : {}),
-                ...(typeof instrument === "string" ? {instrument} : {}),
-                hasTimeline: hasTimeline === true,
-                details
-            }
-        })
         const scripts = items.filter(item => item.group === "scripts").flatMap((item): ReadonlyArray<CommunityScript> => {
             const file = scriptFileOf(item)
             if (!isDefined(file) || !isDefined(item.target)) {return []}
@@ -121,7 +100,6 @@ export namespace Build {
             const payload = writePayload(options.out, "scripts", uuidOf(item), language, new TextEncoder().encode(code))
             return [{...commonOf(item, options, payload), target: item.target, language, details: detailsOf(item)}]
         })
-        writeIndex(options.out, "presets", "presets", presets.toSorted(byName), options.now)
         writeIndex(options.out, "scripts", "scripts", scripts.toSorted(byName), options.now)
         fs.mkdirSync(path.join(options.out, "wclaps"), {recursive: true})
         fs.writeFileSync(path.join(options.out, "wclaps", "index.json"), JSON.stringify({

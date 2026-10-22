@@ -18,7 +18,6 @@ export type Meta = {
 }
 
 const SchemaIds: Record<Group, string> = {
-    presets: "preset",
     scripts: "script",
     wclaps: "wclap"
 }

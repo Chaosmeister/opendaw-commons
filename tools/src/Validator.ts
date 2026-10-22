@@ -1,11 +1,9 @@
 import fs from "node:fs"
 import path from "node:path"
 import {isDefined, Optional} from "@opendaw/lib-std"
-import {CloudIndex} from "./CloudIndex.ts"
 import {DeviceScripts} from "./DeviceScripts.ts"
 import {checkFiles, discover, formatBytes, Item, scriptFileOf, sizeOfTree} from "./Layout.ts"
 import {Meta, MetaValidator} from "./Meta.ts"
-import {Presets} from "./Presets.ts"
 import {ProjectScripts} from "./ProjectScripts.ts"
 import {ItemDetails, Report} from "./Report.ts"
 
@@ -35,10 +33,8 @@ const checkProjectScripts = (items: ReadonlyArray<Item>, report: Report): void =
     ProjectScripts.check(scripts).forEach((messages, where) => messages.forEach(message => report.error(where, message)))
 }
 
-const checkItem = async (item: Item, cloud: CloudIndex, report: Report): Promise<ItemDetails> => {
+const checkItem = (item: Item, report: Report): ItemDetails => {
     switch (item.group) {
-        case "presets":
-            return Presets.check(item, cloud, report)
         case "scripts":
             return item.target === "project" ? {} : checkDeviceScript(item, report)
         case "wclaps": {
@@ -49,14 +45,14 @@ const checkItem = async (item: Item, cloud: CloudIndex, report: Report): Promise
 }
 
 export namespace Validator {
-    export const run = async (root: string, cloud: CloudIndex): Promise<Report> => {
+    export const run = (root: string): Report => {
         const report = new Report()
         const metas = new MetaValidator(root)
         const items = discover(root, report)
         for (const item of items) {
             checkFiles(item, report)
             const meta: Optional<Meta> = metas.check(item, report)
-            const details = await checkItem(item, cloud, report)
+            const details = checkItem(item, report)
             report.item({
                 path: item.path,
                 group: isDefined(item.target) ? `${item.group}/${item.target}` : item.group,

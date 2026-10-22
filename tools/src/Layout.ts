@@ -3,11 +3,11 @@ import path from "node:path"
 import {isDefined, Optional} from "@opendaw/lib-std"
 import {Report} from "./Report.ts"
 
-export type Group = "presets" | "scripts" | "wclaps"
+export type Group = "scripts" | "wclaps"
 
 export type ScriptTarget = "project" | "werkstatt" | "apparat" | "spielwerk"
 
-export const Groups: ReadonlyArray<Group> = ["presets", "scripts", "wclaps"]
+export const Groups: ReadonlyArray<Group> = ["scripts", "wclaps"]
 
 export const ScriptTargets: ReadonlyArray<ScriptTarget> = ["project", "werkstatt", "apparat", "spielwerk"]
 
@@ -23,7 +23,6 @@ const KiB = 1024
 const MiB = 1024 * KiB
 
 export const SizeLimits = {
-    preset: MiB,
     script: 256 * KiB,
     meta: 16 * KiB,
     wclapSource: 20 * MiB
@@ -37,10 +36,6 @@ type FileRule = { readonly name: string, readonly required: boolean, readonly li
 
 const filesOf = (item: Item): ReadonlyArray<FileRule> => {
     switch (item.group) {
-        case "presets":
-            return [
-                {name: "meta.json", required: true, limit: SizeLimits.meta},
-                {name: "preset.odp", required: true, limit: SizeLimits.preset}]
         case "scripts":
             return [{name: "meta.json", required: true, limit: SizeLimits.meta}]
         case "wclaps":

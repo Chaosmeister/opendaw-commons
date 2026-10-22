@@ -1,17 +1,12 @@
-import "../src/NodeEnvironment.ts"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import {CloudIndex} from "../src/CloudIndex.ts"
 import {Report} from "../src/Report.ts"
 import {Validator} from "../src/Validator.ts"
 
 export const RepoRoot = path.resolve(import.meta.dirname, "../..")
-export const Assets = path.resolve(import.meta.dirname, "assets")
 
 export type Files = Record<string, string | Uint8Array>
-
-export const EmptyCloud: CloudIndex = {samples: new Set(), soundfonts: new Set(), wclaps: new Set()}
 
 export const meta = (overrides: Record<string, unknown> = {}): string => JSON.stringify({
     name: "Test Item",
@@ -33,13 +28,10 @@ export const makeRepo = (files: Files): string => {
     return root
 }
 
-export const validate = (files: Files, cloud: CloudIndex = EmptyCloud): Promise<Report> =>
-    Validator.run(makeRepo(files), cloud)
+export const validate = (files: Files): Report => Validator.run(makeRepo(files))
 
 export const messages = (report: Report): ReadonlyArray<string> =>
     report.errors.map(({path, message}) => `${path}: ${message}`)
-
-export const asset = (name: string): Uint8Array => new Uint8Array(fs.readFileSync(path.join(Assets, name)))
 
 export const exampleScript = (target: string, slug: string): string =>
     fs.readFileSync(path.join(RepoRoot, "scripts", target, slug, target === "project" ? "script.ts" : "script.js"), "utf8")
