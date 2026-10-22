@@ -30,5 +30,6 @@ Everything in this repo is [CC0 1.0](LICENSE), except WebCLAP source code, which
 license. Sounds a WebCLAP ships are always CC0.
 
 To add your own, follow the step by step guide in the
-[Community Scripts manual](https://opendaw.studio/manuals/community-scripts). [CONTRIBUTING.md](CONTRIBUTING.md) has
+[Community Scripts manual](https://opendaw.studio/manuals/community-scripts) or the
+[Community WebCLAPs manual](https://opendaw.studio/manuals/community-webclaps). [CONTRIBUTING.md](CONTRIBUTING.md) has
 the details.

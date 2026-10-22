@@ -6,6 +6,9 @@ New here? The [Community Scripts manual](https://opendaw.studio/manuals/communit
 first pull request in the browser, step by step, and has a prompt that lets an AI assistant do it for you. This file
 is the reference for the details.
 
+Sharing a WebCLAP plugin? The [Community WebCLAPs manual](https://opendaw.studio/manuals/community-webclaps) covers
+building, testing and opening the pull request.
+
 ## One item per folder
 
 Every item lives in its own folder. The folder name is the item's slug.
