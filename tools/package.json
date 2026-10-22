@@ -8,7 +8,9 @@
   "scripts": {
     "validate": "tsx src/validate.ts --root ..",
     "test": "tsx --test test/*.test.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "build-indices": "tsx src/deploy.ts --root .. --out ../dist",
+    "deploy": "tsx src/deploy.ts --root .. --upload"
   },
   "dependencies": {
     "@opendaw/lib-box": "0.0.99",
@@ -17,13 +19,16 @@
     "@opendaw/studio-adapters": "0.3.9",
     "@opendaw/studio-boxes": "0.0.115",
     "@opendaw/studio-core": "0.2.11",
+    "@opendaw/studio-enums": "0.1.8",
     "@opendaw/studio-scripting": "0.0.91",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
+    "ssh2-sftp-client": "12.1.1",
     "tsx": "4.19.2",
     "typescript": "5.8.3"
   },
   "devDependencies": {
-    "@types/node": "22.15.21"
+    "@types/node": "22.15.21",
+    "@types/ssh2-sftp-client": "9.0.5"
   }
 }

@@ -1,8 +1,9 @@
 import fs from "node:fs"
 import path from "node:path"
-import {ByteArrayInput, Option, tryCatch} from "@opendaw/lib-std"
-import {BoxGraph} from "@opendaw/lib-box"
-import {BoxIO} from "@opendaw/studio-boxes"
+import {ByteArrayInput, isInstanceOf, Option, tryCatch} from "@opendaw/lib-std"
+import {BoxGraph, IndexedBox} from "@opendaw/lib-box"
+import {AudioUnitBox, BoxIO, TrackBox} from "@opendaw/studio-boxes"
+import {AudioUnitType} from "@opendaw/studio-enums"
 import {PresetHeader} from "@opendaw/studio-adapters"
 import {PresetInspection, PresetInspector} from "@opendaw/studio-core"
 import {BoxContent} from "./BoxContent.ts"
@@ -41,14 +42,26 @@ export namespace Presets {
             report.error(where, "The preset holds no instrument, effect or chain the Studio recognises.")
             return {}
         }
-        return {...describe(inspection.unwrap()), ...BoxContent.check(graph, where, cloud, report)}
+        return {
+            ...describe(inspection.unwrap(), graph),
+            hasTimeline: graph.boxes().some(box => isInstanceOf(box, TrackBox)),
+            ...BoxContent.check(graph, where, cloud, report)
+        }
     }
 }
 
-const describe = (inspection: PresetInspection): ItemDetails => {
+// the binary does not say whether it was saved as an instrument or as a rack, a unit without effects loads as an instrument
+const hasEffects = (graph: BoxGraph): boolean => graph.boxes()
+    .filter(box => isInstanceOf(box, AudioUnitBox))
+    .filter(box => box.type.getValue() !== AudioUnitType.Output)
+    .some(box => IndexedBox.collectIndexedBoxes(box.audioEffects).length + IndexedBox.collectIndexedBoxes(box.midiEffects).length > 0)
+
+const describe = (inspection: PresetInspection, graph: BoxGraph): ItemDetails => {
     switch (inspection.category) {
         case "audio-unit":
-            return {category: inspection.category, device: inspection.instrument}
+            return hasEffects(graph)
+                ? {category: "audio-unit", instrument: inspection.instrument}
+                : {category: "instrument", device: inspection.instrument}
         case "audio-effect":
         case "midi-effect":
             return {category: inspection.category, device: inspection.device}

@@ -1,4 +1,6 @@
+import {isAbsent} from "@opendaw/lib-std"
+
 // studio-core references AudioWorkletNode at module load
-if (typeof globalThis.AudioWorkletNode === "undefined") {
-    Object.assign(globalThis, {AudioWorkletNode: class {}})
+if (isAbsent(Reflect.get(globalThis, "AudioWorkletNode"))) {
+    Reflect.set(globalThis, "AudioWorkletNode", class {})
 }
