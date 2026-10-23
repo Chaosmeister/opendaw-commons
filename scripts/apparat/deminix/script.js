@@ -1,21 +1,30 @@
-// Deterministic Matrix Synth -> Deminix
-// by Chaosmeister - https://github.com/Chaosmeister
-// Version 3: 
-// - custom view goodness and massive extension
-// >> new hexadecimal matrix upgrades the amount of possible values 
-// >> from    387420489 
-// >> to    68719476736
-// >> possible combinations
-// - each of the matrix values now change a specific property of the sound
-// - extended tone / shaping section for even more control
-// - real shuffle buttons, finally! unlimited creativity
 // @label Deminix
 // @view MatrixView 1 1 4 3
 // @view ToneView 5 1 10 3
-// @view PatchView 15 1 4 3
+// @view PatchView 15 1 3 3
+// @param family 5 0 15 int [omit-default-ui]
+// @param harmonics 5 0 15 int [omit-default-ui]
+// @param brightness 5 0 15 int [omit-default-ui]
+// @param motion 5 0 15 int [omit-default-ui]
+// @param attack 5 0 15 int [omit-default-ui]
+// @param decay 5 0 15 int [omit-default-ui]
+// @param sustain 5 0 15 int [omit-default-ui]
+// @param release 5 0 15 int [omit-default-ui]
+// @param character 5 0 15 int [omit-default-ui]
+// @param filterEnv 0.45 0 1 linear [omit-default-ui]
+// @param filterDecay 0.399128 0.02 4 exp s [omit-default-ui]
+// @param width 0.5 0 1 linear [omit-default-ui]
+// @param saturation 0.2 0 1 linear [omit-default-ui]
+// @param partialDecay 0 0 1 linear [omit-default-ui]
+// @param partialTime 0.501252 0.02 4 exp s [omit-default-ui]
+// @param fmEnv 0 0 1 linear [omit-default-ui]
+// @param fmTime 0.250392 0.02 4 exp s [omit-default-ui]
+// @param velocityTimbre 0 0 1 linear [omit-default-ui]
+// @param detune 1 0 1 linear [omit-default-ui]
+// @param tremolo 1 0 1 linear [omit-default-ui]
+// @param vibrato 1 0 1 linear [omit-default-ui]
 // @stream uiHints 256 value
 // @collection matrix 9
-// @field matrix.value 5 0 15 int
 // @field matrix.lock false
 // @collection snapshots 2
 // @field snapshots.valid false
@@ -41,19 +50,6 @@
 // @field snapshots.detune 1 0 1 linear
 // @field snapshots.tremolo 1 0 1 linear
 // @field snapshots.vibrato 1 0 1 linear
-// @collection tone 1
-// @field tone.filterEnv 0.45 0 1 linear
-// @field tone.filterDecay 0.399128 0.02 4 exp s
-// @field tone.width 0.5 0 1 linear
-// @field tone.saturation 0.2 0 1 linear
-// @field tone.partialDecay 0 0 1 linear
-// @field tone.partialTime 0.501252 0.02 4 exp s
-// @field tone.fmEnv 0 0 1 linear
-// @field tone.fmTime 0.250392 0.02 4 exp s
-// @field tone.velocityTimbre 0 0 1 linear
-// @field tone.detune 1 0 1 linear
-// @field tone.tremolo 1 0 1 linear
-// @field tone.vibrato 1 0 1 linear
 
 // ─── Deterministic PRNG (Mulberry32) ──────────────────────────────────────
 class RNG {
@@ -70,13 +66,19 @@ class RNG {
 }
 
 // ─── Waveshape functions ───────────────────────────────────────────────────
-function waveTri(ph) { const p = ph % 1; return p < 0.5 ? 4 * p - 1 : 3 - 4 * p }
+// Stop inaudible tails before subnormal floating-point arithmetic slows sustained voices.
+function decayEnvelope(value, rate) { return value > 1e-30 ? value * rate : 0 }
+function smoothValue(value, target, rate) {
+    const next = value + (target - value) * rate
+    return Math.abs(next) < 1e-30 ? 0 : next
+}
+function waveTri(ph) { const p = ph; return p < 0.5 ? 4 * p - 1 : 3 - 4 * p }
 
-const FAMILY_NAMES = ['Reed / harmonium', 'Organ', 'Flute / breath', 'Pluck', 'Sub bass', 'Bell', 'Pad / strings', 'Choir / vowels', 'Noise / percussion', 'Metal / cymbal', 'Glass / crystal', 'Electric piano', 'Sync-style lead', 'Chiptune', 'Drone / fifths', 'Kick / tom']
+const FAMILY_NAMES = ['Reed / harmonium', 'Organ', 'Flute / breath', 'Pluck', 'Sub bass', 'Bell', 'Pad / strings', 'Choir / vowels', 'Wood mallet', 'Metal / cymbal', 'Glass / crystal', 'Electric piano', 'Sync-style lead', 'Chiptune', 'Drone / fifths', 'Bowed resonator']
 const FAMILY_TYPES = [9, 0, 5, 1, 6, 2, 3, 7, 4, 8, 10, 11, 12, 13, 14, 15]
 
-const VOICE_SCALARS = ["stage","decayRate","noiseState","noiseMix","sideFilter","filterEnvelope","baseCutoff","filter","filterRate","filterTarget","filterClock","fastRelease","id","active","gate","freq","velocity","gain","attackRate","releaseRate","sustainGain","numPartials","fmPhase","fmFreqMul","fmDepth","tremPhase","tremRate","tremDepth","vibPhase","vibRate","vibDepth","pitch","cent","fmEnvelope","smoothPartialAmount","smoothFMAmount","pitchEnvelope","pitchDepth","pitchRate","velocityShade","smoothDetune","smoothTremolo","smoothVibrato"]
-const VOICE_ARRAYS = ["phases", "freqMul", "amps", "detuneAmt", "pan", "waveType", "partialGain", "partialRate"]
+const VOICE_SCALARS = ["stage","decayRate","noiseState","noiseMix","sideFilter","filterEnvelope","baseCutoff","filter","filterRate","filterTarget","filterClock","filterSeenEnvelope","filterSeenVelocity","filterSeenAmount","fastRelease","id","active","gate","freq","velocity","gain","attackRate","releaseRate","sustainGain","numPartials","fmPhase","fmFreqMul","fmDepth","tremPhase","tremRate","tremDepth","vibPhase","vibRate","vibDepth","pitch","cent","fmEnvelope","smoothPartialAmount","smoothFMAmount","velocityShade","smoothDetune","smoothTremolo","smoothVibrato"]
+const VOICE_ARRAYS = ["phases", "freqMul", "amps", "detuneAmt", "pan", "waveType", "partialGain", "partialRate", "baseFreqs"]
 
 // ─── Voice ─────────────────────────────────────────────────────────────────
 class Voice {
@@ -87,9 +89,6 @@ class Voice {
         this.smoothDetune = this.smoothTremolo = this.smoothVibrato = 1
         this.partialGain = new Float64Array(maxPartials).fill(1)
         this.partialRate = new Float64Array(maxPartials).fill(1)
-        this.pitchEnvelope = 1
-        this.pitchDepth = 0
-        this.pitchRate = 1
         this.velocityShade = 0
         this.pitch = 69
         this.cent = 0
@@ -107,6 +106,7 @@ class Voice {
         this.filter = 0
         this.filterTarget = 1
         this.filterClock = 0
+        this.filterSeenEnvelope = this.filterSeenVelocity = this.filterSeenAmount = NaN
         this.filterRate = 1
         this.fastRelease = false
         this.id = -1
@@ -121,6 +121,7 @@ class Voice {
         this.numPartials = 1
         this.phases = new Float32Array(maxPartials)
         this.freqMul = new Float32Array(maxPartials)
+        this.baseFreqs = new Float64Array(maxPartials)
         this.amps = new Float32Array(maxPartials)
         this.detuneAmt = new Float32Array(maxPartials)
         this.pan = new Float32Array(maxPartials)
@@ -191,51 +192,20 @@ class Processor {
         this.hintDirty = true
     }
 
-    dataChanged(name) {
-        if (name === 'tone') {
-            const tone = this.data.tone[0]
-            if (tone) {
-                const previousAmount = this.filterEnv
-                const previousDecay = this.filterDecay
-                this._setTone('filterEnv', tone.filterEnv)
-                this._setTone('filterDecay', tone.filterDecay)
-                this._setTone('width', tone.width)
-                this._setTone('saturation', tone.saturation)
-                this._setTone('partialDecay', tone.partialDecay)
-                this._setTone('partialTime', tone.partialTime)
-                this._setTone('fmEnv', tone.fmEnv)
-                this._setTone('fmTime', tone.fmTime)
-                this._setTone('velocityTimbre', tone.velocityTimbre === undefined ? 0 : tone.velocityTimbre)
-                for (const name of ['detune', 'tremolo', 'vibrato']) this._setTone(name, tone[name] === undefined ? 1 : tone[name])
-                if (previousAmount !== this.filterEnv || previousDecay !== this.filterDecay) {
-                    for (let i = 0; i < this.voices.length; i++) {
-                        const voice = this.voices[i]
-                        if (!voice.active) continue
-                        voice.filterEnvelope = 1
-                        voice.filterClock = 0
-                        if (voice.fadeRemaining > 0) {
-                            voice.previous.filterEnvelope = 1
-                            voice.previous.filterClock = 0
-                        }
-                        if (voice.pendingReady) {
-                            voice.pending.filterEnvelope = 1
-                            voice.pending.filterClock = 0
-                        }
-                    }
-                }
-            }
-            return
+    paramChanged(name, value) {
+        const matrix = MATRIX_NAMES.indexOf(name)
+        const tone = TONE_NAMES.indexOf(name)
+        if ((matrix < 0 && tone < 0) || !Number.isFinite(value)) return
+        if (matrix < 0) this._setTone(name, value)
+        else {
+            const next = Math.max(0, Math.min(15, Math.round(value)))
+            if (next === this.params[matrix]) return
+            this.params[matrix] = next
+            this._retargetVoices()
         }
-        if (name !== "matrix") return
-        const records = this.data.matrix
-        let changed = false
-        for (let i = 0; i < 9; i++) {
-            const value = records[i] ? records[i].value : 5
-            const next = Number.isFinite(value) ? Math.max(0, Math.min(15, Math.round(value))) : 5
-            if (next !== this.params[i]) changed = true
-            this.params[i] = next
-        }
-        if (!changed) return
+    }
+
+    _retargetVoices() {
         for (let i = 0; i < this.voices.length; i++) {
             const voice = this.voices[i]
             if (!voice.active) continue
@@ -269,13 +239,13 @@ class Processor {
         target.filterRate = source.filterRate
         target.filterTarget = source.filterTarget
         target.filterClock = source.filterClock
+        target.filterSeenEnvelope = NaN
         target.phases.set(source.phases)
         target.fmPhase = source.fmPhase
         target.tremPhase = source.tremPhase
         target.vibPhase = source.vibPhase
         target.noiseState = source.noiseState
         target.velocityShade = source.velocityShade
-        target.pitchEnvelope = source.pitchEnvelope
         target.fmEnvelope = source.fmEnvelope
         target.partialGain.set(source.partialGain)
         target.smoothPartialAmount = source.smoothPartialAmount
@@ -295,6 +265,7 @@ class Processor {
 
     _setTone(name, value) {
         if (!Number.isFinite(value)) return
+        const previous = this[name]
         value = toneValue(name, toneStep(name, value))
         if (name === 'filterEnv') this.filterEnv = Math.max(0, Math.min(1, value))
         if (name === 'filterDecay') {
@@ -322,6 +293,14 @@ class Processor {
                     if (voice.fadeRemaining > 0) this._partialRates(voice.previous)
                     if (voice.pendingReady) this._partialRates(voice.pending)
                 }
+            }
+        }
+        if ((name === 'filterEnv' || name === 'filterDecay') && previous !== this[name]) {
+            for (const voice of this.voices) {
+                if (!voice.active) continue
+                voice.filterEnvelope = 1; voice.filterClock = 0
+                if (voice.fadeRemaining > 0) { voice.previous.filterEnvelope = 1; voice.previous.filterClock = 0 }
+                if (voice.pendingReady) { voice.pending.filterEnvelope = 1; voice.pending.filterClock = 0 }
             }
         }
     }
@@ -355,7 +334,7 @@ class Processor {
         const harmonicity = p[1] / 15
         const brightness = p[2] / 15
         const motion = p[3] / 15
-        const percussive = family === 1 || family === 2 || family === 4 || family === 8 || family === 10 || family === 11 || family === 15
+        const percussive = family === 1 || family === 2 || family === 4 || family === 8 || family === 10 || family === 11
         voice.pitch = pitch
         voice.cent = cent
         voice.freq = 440 * Math.pow(2, (pitch - 69 + cent / 100) / 12)
@@ -372,20 +351,17 @@ class Processor {
         voice.smoothDetune = this.detune
         voice.smoothTremolo = this.tremolo
         voice.smoothVibrato = this.vibrato
-        const slowAttack = family === 3 || family === 7 || family === 14
+        const slowAttack = family === 3 || family === 7 || family === 14 || family === 15
         const attackSec = (slowAttack ? 0.04 : family === 5 ? 0.008 : 0.001) * Math.pow(slowAttack ? 60 : 150, p[4] / 15)
-        const decaySec = (family === 2 || family === 8 || family === 10 ? 0.3 : 0.025) * Math.pow(60, p[5] / 15)
-        const releaseSec = (family === 3 || family === 2 || family === 7 || family === 8 || family === 10 || family === 14 ? 0.08 : 0.008) * Math.pow(150, p[7] / 15)
+        const decaySec = (family === 2 || family === 4 || family === 8 || family === 10 ? 0.3 : 0.025) * Math.pow(60, p[5] / 15)
+        const releaseSec = (family === 3 || family === 2 || family === 7 || family === 8 || family === 10 || family === 14 || family === 15 ? 0.08 : 0.008) * Math.pow(150, p[7] / 15)
         voice.attackRate = 1 / (attackSec * sampleRate)
         voice.decayRate = 1 - Math.exp(-5 / (decaySec * sampleRate))
         voice.releaseRate = 1 - Math.exp(-7 / (releaseSec * sampleRate))
         voice.sustainGain = Math.pow(p[6] / 15, 2) * (percussive ? 0.18 : 1)
-        voice.numPartials = family === 15 ? 1 : family === 13 ? 5 : family === 3 ? 6 : 8
-        voice.pitchEnvelope = 1
-        voice.pitchDepth = family === 15 ? 2 + p[8] / 15 * 6 : 0
-        voice.pitchRate = Math.exp(-8 / ((.015 + p[8] / 15 * .12) * sampleRate))
+        voice.numPartials = family === 13 ? 5 : family === 3 ? 6 : 8
         voice.noiseState = (p[8] * 2654435761) >>> 0
-        voice.noiseMix = family === 4 ? 0.3 + brightness * 0.65 : family === 5 ? 0.015 + brightness * 0.04 : family === 8 ? 0.08 + brightness * 0.15 : family === 9 ? .015 : family === 15 ? brightness * .025 : 0
+        voice.noiseMix = family === 5 ? 0.015 + brightness * 0.04 : family === 8 ? 0.08 + brightness * 0.15 : family === 9 ? .015 : 0
         voice.sideFilter = 0
         voice.filterEnvelope = 1
         voice.filter = 0
@@ -394,12 +370,15 @@ class Processor {
         voice.filterRate = 1 - Math.exp(-6.283185307 * this._filterCutoff(voice) / sampleRate)
         voice.filterTarget = voice.filterRate
         voice.filterClock = 0
+        voice.filterSeenEnvelope = voice.filterEnvelope
+        voice.filterSeenVelocity = voice.velocityShade
+        voice.filterSeenAmount = this.filterEnv
         let total = 0
         for (let k = 0; k < voice.numPartials; k++) {
             const n = k + 1
             const variation = rng.next()
             let ratio = n
-            if (family === 2 || family === 4 || family === 8) {
+            if (family === 2 || family === 8) {
                 ratio = n + (1 - harmonicity) * (k * k * (family === 8 ? 0.73 : 0.21) + variation * k)
                 if (family === 8) ratio *= 2.3
             } else if (family === 3) {
@@ -414,9 +393,11 @@ class Processor {
             if (family === 11) ratio = k === 0 ? 1 : n + (1 - harmonicity) * k * .015
             if (family === 12) ratio = k < 4 ? 1 : 2 + harmonicity
             if (family === 14) ratio = k < 2 ? 1 : k < 4 ? 1.5 : k < 6 ? 2 : 3
-            if (family === 15) ratio = 1
+            if (family === 4) ratio = k === 0 ? 1 : n * n + (1 - harmonicity) * k * .12
+            if (family === 15) ratio = n + (1 - harmonicity) * k * .025
             voice.pan[k] = (k % 2 === 0 ? -1 : 1) * (0.3 + variation * 0.5)
             voice.freqMul[k] = ratio
+            voice.baseFreqs[k] = voice.freq * voice.freqMul[k]
             voice.amps[k] = Math.pow(n, -(2.8 - brightness * 2.4)) * (0.8 + variation * 0.2)
             if (family === 3) voice.amps[k] = k < 3 ? 1 : 0.2 + brightness * 0.4
             if (family === 5) voice.amps[k] *= k === 0 ? 2 : k === 1 ? 0.45 : 0.08
@@ -435,15 +416,17 @@ class Processor {
             if (family === 12) voice.amps[k] = k < 4 ? 1 : .25 + brightness * .5
             if (family === 13) voice.amps[k] = 1 / Math.pow(n * 2 - 1, 1.8 - brightness)
             if (family === 14) voice.amps[k] = k < 2 ? 1 : .45
+            if (family === 4) voice.amps[k] = k === 0 ? 1 : (.22 + brightness * .7) * Math.exp(-.38 * k) / Math.sqrt(n)
+            if (family === 15) voice.amps[k] = Math.pow(n, -(1.6 - brightness * .9)) * (.45 + Math.exp(-Math.pow((n - 2 - p[8] / 15 * 4) / 1.3, 2)))
             total += voice.amps[k]
             voice.phases[k] = family === 1 || family === 4 || family === 6 || family === 8 || family === 11 || family === 13 || family === 15 ? 0 : rng.next()
             voice.detuneAmt[k] = family === 7 ? (variation - 0.5) * motion * 0.008 : family === 3 ? (k % 3 - 1) * (0.002 + motion * 0.012) : 0
             if (family === 12 || family === 14) voice.detuneAmt[k] = (k % 2 ? 1 : -1) * (.001 + motion * .008)
-            voice.waveType[k] = family === 3 || family === 12 ? 2 : family === 1 && k === 0 ? 1 : 0
+            voice.waveType[k] = family === 3 || family === 12 ? 2 : (family === 1 || family === 15) && k === 0 ? 1 : 0
         }
         for (let k = 0; k < voice.numPartials; k++) voice.amps[k] /= total
-        voice.fmFreqMul = 1 + p[8] / 15 * 4
-        voice.fmDepth = family === 8 ? 0.7 + brightness * 2.5 : family === 2 ? 0.2 + brightness * 1.8 : family === 4 ? brightness * 0.8 : family === 1 ? brightness * 0.12 : 0
+        voice.fmFreqMul = family === 4 ? 1 + Math.round(p[8] / 15 * 3) : 1 + p[8] / 15 * 4
+        voice.fmDepth = family === 8 ? 0.7 + brightness * 2.5 : family === 2 ? 0.2 + brightness * 1.8 : family === 4 ? brightness * 0.12 : family === 1 ? brightness * 0.12 : 0
         if (family === 9) voice.fmDepth = brightness * .05
         if (family === 10) voice.fmDepth = .08 + brightness * .6
         if (family === 11) voice.fmDepth = .1 + brightness * .5
@@ -500,11 +483,15 @@ class Processor {
     }
 
     _sine(phase) {
-        phase -= Math.floor(phase)
+        return this._sineUnit(phase - Math.floor(phase))
+    }
+
+    _sineUnit(phase) {
         const position = phase * 4096
-        const index = position | 0
+        const integer = position | 0
+        const index = integer & 4095
         const a = this.sineTable[index]
-        return a + (this.sineTable[index + 1] - a) * (position - index)
+        return a + (this.sineTable[index + 1] - a) * (position - integer)
     }
 
     _renderSample(v, invSR, filterDecayRate, smoothRate) {
@@ -524,79 +511,88 @@ class Processor {
         if (v.stage === 1 && v.sustainGain === 0 && v.gain < 0.000001) {
             v.sampleL = 0; v.sampleR = 0
             v.filter = 0; v.sideFilter = 0
-            v.filterEnvelope *= filterDecayRate
-            v.fmEnvelope *= this.fmDecayRate
-            for (let k = 0; k < v.numPartials; k++) v.partialGain[k] *= v.partialRate[k]
+            v.filterEnvelope = decayEnvelope(v.filterEnvelope, filterDecayRate)
+            v.fmEnvelope = decayEnvelope(v.fmEnvelope, this.fmDecayRate)
+            for (let k = 0; k < v.numPartials; k++) v.partialGain[k] = decayEnvelope(v.partialGain[k], v.partialRate[k])
             return
         }
-        v.velocityShade += (this.velocityTimbre * (v.velocity - 1) - v.velocityShade) * smoothRate
+        v.velocityShade = smoothValue(v.velocityShade, this.velocityTimbre * (v.velocity - 1), smoothRate)
         const velocityColor = 1 + v.velocityShade * .8
-        const baseFreq = v.freq * (1 + v.pitchDepth * v.pitchEnvelope)
-        v.pitchEnvelope *= v.pitchRate
-        v.smoothDetune += (this.detune - v.smoothDetune) * smoothRate
-        v.smoothTremolo += (this.tremolo - v.smoothTremolo) * smoothRate
-        v.smoothVibrato += (this.vibrato - v.smoothVibrato) * smoothRate
-        const vibMod = 1 + (v.vibDepth === 0 ? 0 : this._sine(v.vibPhase) * v.vibDepth * v.smoothVibrato)
+        const baseFreq = v.freq
+        v.smoothDetune = smoothValue(v.smoothDetune, this.detune, smoothRate)
+        v.smoothTremolo = smoothValue(v.smoothTremolo, this.tremolo, smoothRate)
+        v.smoothVibrato = smoothValue(v.smoothVibrato, this.vibrato, smoothRate)
+        const vibMod = 1 + (v.vibDepth === 0 ? 0 : this._sineUnit(v.vibPhase) * v.vibDepth * v.smoothVibrato)
         v.vibPhase += v.vibRate * invSR
         if (v.vibPhase >= 1) v.vibPhase -= 1
 
-        v.smoothPartialAmount += (this.partialDecay - v.smoothPartialAmount) * smoothRate
-        v.smoothFMAmount += (this.fmEnv - v.smoothFMAmount) * smoothRate
+        v.smoothPartialAmount = smoothValue(v.smoothPartialAmount, this.partialDecay, smoothRate)
+        v.smoothFMAmount = smoothValue(v.smoothFMAmount, this.fmEnv, smoothRate)
         const fmAccent = v.smoothFMAmount * v.fmEnvelope * velocityColor
         const fmDepth = v.fmDepth * velocityColor + fmAccent * 3
-        const fmSig = fmDepth === 0 ? 0 : this._sine(v.fmPhase) * fmDepth
-        v.fmEnvelope *= this.fmDecayRate
+        const fmSig = fmDepth === 0 ? 0 : this._sineUnit(v.fmPhase) * fmDepth
+        const fmOffset = fmSig / 6.283185307
+        v.fmEnvelope = decayEnvelope(v.fmEnvelope, this.fmDecayRate)
         v.fmPhase = (v.fmPhase + baseFreq * v.fmFreqMul * vibMod * invSR) % 1
 
         let sig = 0
         let side = 0
         const np = v.numPartials
+        const phases = v.phases, frequencies = v.baseFreqs, detune = v.detuneAmt
+        const waves = v.waveType, amplitudes = v.amps, pans = v.pan
+        const partialGain = v.partialGain, partialRate = v.partialRate
         for (let k = 0; k < np; k++) {
-            const pFreq = baseFreq * v.freqMul[k] * vibMod * (1 + v.detuneAmt[k] * v.smoothDetune)
+            const pFreq = frequencies[k] * vibMod * (1 + detune[k] * v.smoothDetune)
             const phAdv = Math.min(0.45, pFreq * invSR)
             // Cull partials above Nyquist; pad saws use PolyBLEP edges.
             if (pFreq < sampleRate * 0.45) {
-                const phase = v.phases[k]
+                const phase = phases[k]
+                const type = waves[k]
                 let value
-                if (v.waveType[k] === 2) {
+                if (type === 2) {
                     value = 2 * phase - 1
                     if (phase < phAdv) { const t = phase / phAdv; value -= t + t - t * t - 1 }
                     else if (phase > 1 - phAdv) { const t = (phase - 1) / phAdv; value -= t * t + t + t + 1 }
                 } else {
-                    value = v.waveType[k] === 0 ? this._sine(phase + fmSig / 6.283185307) : waveTri(phase)
+                    value = type === 0 ? (fmSig === 0 ? this._sineUnit(phase) : this._sine(phase + fmOffset)) : waveTri(phase)
                 }
                 // A fading sine-FM layer gives saw/triangle families an accent too.
-                if (v.waveType[k] !== 0 && fmAccent > 0.00001) {
+                if (type !== 0 && fmAccent > 0.00001) {
                     const mix = fmAccent * .4
-                    value += (this._sine(phase + fmSig / 6.283185307) - value) * mix
+                    value += (this._sine(phase + fmOffset) - value) * mix
                 }
-                const spectralGain = 1 - v.smoothPartialAmount * (1 - v.partialGain[k])
-                const partial = value * v.amps[k] * spectralGain
+                const spectralGain = 1 - v.smoothPartialAmount * (1 - partialGain[k])
+                const partial = value * amplitudes[k] * spectralGain
                 sig += partial
                 // Fundamentals below 160 Hz stay centered; upper harmonics spread.
-                side += partial * v.pan[k] * Math.max(0, Math.min(1, (pFreq - 160) / 500))
+                side += partial * pans[k] * Math.max(0, Math.min(1, (pFreq - 160) / 500))
             }
-            v.partialGain[k] *= v.partialRate[k]
-            const nextPhase = v.phases[k] + phAdv
-            v.phases[k] = nextPhase >= 1 ? nextPhase - 1 : nextPhase
+            partialGain[k] = decayEnvelope(partialGain[k], partialRate[k])
+            const nextPhase = phases[k] + phAdv
+            phases[k] = nextPhase >= 1 ? nextPhase - 1 : nextPhase
         }
 
-        const trem = 1 - v.tremDepth * v.smoothTremolo * (0.5 + 0.5 * this._sine(v.tremPhase))
+        const trem = 1 - v.tremDepth * v.smoothTremolo * (0.5 + 0.5 * this._sineUnit(v.tremPhase))
         v.tremPhase += v.tremRate * invSR
         if (v.tremPhase >= 1) v.tremPhase -= 1
 
         v.noiseState = (Math.imul(v.noiseState, 1664525) + 1013904223) >>> 0
-        sig = sig * (1 - v.noiseMix) + (v.noiseState / 2147483648 - 1) * v.noiseMix
+        if (v.noiseMix !== 0) sig = sig * (1 - v.noiseMix) + (v.noiseState / 2147483648 - 1) * v.noiseMix
         // Recompute expensive coefficients at a sample-counted control rate (~1.5 kHz).
         // Continue smoothing the coefficient and decaying the envelope every sample.
         if (v.filterClock === 0) {
-            const cutoff = this._filterCutoff(v)
-            v.filterTarget = 1 - Math.exp(-6.283185307 * cutoff * invSR)
+            if (v.filterEnvelope !== v.filterSeenEnvelope || v.velocityShade !== v.filterSeenVelocity || this.filterEnv !== v.filterSeenAmount) {
+                const cutoff = this._filterCutoff(v)
+                v.filterTarget = 1 - Math.exp(-6.283185307 * cutoff * invSR)
+                v.filterSeenEnvelope = v.filterEnvelope
+                v.filterSeenVelocity = v.velocityShade
+                v.filterSeenAmount = this.filterEnv
+            }
             v.filterClock = 32
         }
         v.filterClock--
         v.filterRate += (v.filterTarget - v.filterRate) * smoothRate
-        if (v.stage !== 0 || !v.gate) v.filterEnvelope *= filterDecayRate
+        if (v.stage !== 0 || !v.gate) v.filterEnvelope = decayEnvelope(v.filterEnvelope, filterDecayRate)
         v.filter += (sig - v.filter) * v.filterRate
         v.sideFilter += (side * (1 - v.noiseMix) - v.sideFilter) * v.filterRate
         const gain = v.gain * v.velocity * trem
@@ -633,7 +629,7 @@ class Processor {
             }
         }
         for (let s = block.s0; s < block.s1; s++) {
-            this.smoothWidth += (this.width - this.smoothWidth) * smoothRate
+            this.smoothWidth = smoothValue(this.smoothWidth, this.width, smoothRate)
             this.smoothDrive += (1 + this.saturation * 4 - this.smoothDrive) * smoothRate
             const mid = (outL[s] + outR[s]) * 0.5
             const side = (outL[s] - outR[s]) * 0.5 * this.smoothWidth
@@ -652,6 +648,7 @@ class Processor {
     }
 }
 
+const MATRIX_NAMES = ['family', 'harmonics', 'brightness', 'motion', 'attack', 'decay', 'sustain', 'release', 'character']
 const TONE_NAMES = ['filterEnv', 'filterDecay', 'width', 'saturation', 'partialDecay', 'partialTime', 'fmEnv', 'fmTime', 'velocityTimbre', 'detune', 'tremolo', 'vibrato']
 const TONE_DEFAULTS = {velocityTimbre:0, detune:1, tremolo:1, vibrato:1}
 
@@ -678,7 +675,20 @@ function quantizedTone(tone) {
     return result
 }
 function readTone(host) {
-    return quantizedTone(host.data.tone.get(0))
+    const tone = {}
+    for (const name of TONE_NAMES) tone[name] = toneValue(name, toneStep(name, host.params[name].value))
+    return tone
+}
+function writeTone(host, tone) {
+    for (const name of TONE_NAMES) if (tone[name] !== undefined) host.params[name].set(tone[name])
+}
+function matrixValue(host, index) {
+    const value = host.params[MATRIX_NAMES[index]].value
+    return Math.max(0, Math.min(15, Math.round(value)))
+}
+function setMatrixValue(host, index, value) { host.params[MATRIX_NAMES[index]].set(value) }
+function watchParameters(host, names, observer, subscriptions) {
+    for (const name of names) subscriptions.push(host.params[name].subscribe(observer))
 }
 function validTone(tone) {
     if (!tone || typeof tone !== 'object' || Array.isArray(tone)) return false
@@ -710,7 +720,7 @@ function terminateSubscription(subscription) {
 function installFamilyTheme(host) {
     host.root.style.setProperty('--family-surface', 'hsl(var(--family-hue) 22% 13%)')
     const update = () => host.root.style.setProperty('--family-hue',
-        (host.data.matrix.get(0).value * 360 / 16).toFixed(3))
+        (matrixValue(host, 0) * 360 / 16).toFixed(3))
     const style = document.createElement('style')
     style.textContent = `
         * { box-sizing:border-box; }
@@ -732,19 +742,19 @@ function installFamilyTheme(host) {
     `
     host.root.append(style)
     update()
-    return host.data.matrix.subscribe(update)
+    return host.params.family.subscribe(update)
 }
 function legacyMatrix(values) {
     if (!Array.isArray(values) || values.length !== 9 || !values.every(value => Number.isInteger(value) && value >= 1 && value <= 9)) return null
     return values.map((value, index) => index === 0 ? value : Math.round((value - 1) * 15 / 8))
 }
 function shuffleMatrix(host) {
-    const currentFamily = host.data.matrix.get(0).value
+    const currentFamily = matrixValue(host, 0)
     let f = currentFamily
     if (!host.data.matrix.get(0).lock) {
         f = Math.floor(Math.random() * 15)
         if (f >= currentFamily) f++
-        host.data.matrix.set(0, {value:f})
+        setMatrixValue(host, 0, f)
     }
     // Ranges for harmonicity, brightness, motion, attack, decay, sustain, release, character.
     const ranges = [
@@ -756,18 +766,18 @@ function shuffleMatrix(host) {
         [[0,11],[4,15],[0,4],[0,2],[8,15],[0,2],[8,15],[0,15]],
         [[8,15],[2,13],[4,13],[4,13],[8,15],[8,15],[8,15],[0,15]],
         [[11,15],[4,13],[2,9],[4,11],[6,13],[9,15],[6,13],[0,15]],
-        [[0,13],[2,15],[0,4],[0,0],[0,8],[0,0],[0,6],[0,15]],
+        [[10,15],[3,13],[0,5],[0,3],[6,13],[0,4],[3,10],[0,15]],
         [[0,8],[8,15],[0,6],[0,2],[6,15],[0,2],[6,15],[0,15]],
         [[1,10],[7,15],[0,4],[0,2],[9,15],[0,2],[8,15],[0,15]],
         [[12,15],[3,12],[0,5],[0,3],[5,12],[0,6],[3,10],[0,15]],
         [[7,15],[7,15],[2,12],[0,5],[4,12],[7,15],[2,9],[0,15]],
         [[12,15],[4,15],[0,5],[0,1],[1,8],[0,12],[0,6],[0,15]],
         [[6,15],[2,12],[4,15],[6,15],[8,15],[10,15],[9,15],[0,15]],
-        [[12,15],[0,10],[0,2],[0,0],[1,8],[0,0],[0,5],[0,15]]
+        [[9,15],[4,13],[2,11],[4,11],[6,14],[10,15],[7,14],[0,15]]
     ][f]
     for (let i = 1; i < 9; i++) if (!host.data.matrix.get(i).lock) {
         const range = ranges[i - 1]
-        host.data.matrix.set(i, {value:range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1))})
+        setMatrixValue(host, i, range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1)))
     }
     return f
 }
@@ -780,11 +790,11 @@ function mutateMatrix(host) {
         for (let n = 0; n < count; n++) {
             const pick = Math.floor(Math.random() * candidates.length)
             const index = candidates.splice(pick, 1)[0]
-            const value = host.data.matrix.get(index).value
+            const value = matrixValue(host, index)
             const step = 1 + Math.floor(Math.random() * 2)
             let next = value + (Math.random() < .5 ? -step : step)
             if (next < 0 || next > 15) next = value + (next < 0 ? step : -step)
-            host.data.matrix.set(index, {value:next})
+            setMatrixValue(host, index, next)
         }
     })
     return count
@@ -795,11 +805,11 @@ function randomTone(family) {
         filterEnv:.15 + Math.random() * .85, filterDecay:time(),
         width:Math.random() * (family === 4 ? .25 : 1), saturation:Math.random() * .45,
         partialDecay:Math.random() * .85, partialTime:time(),
-        fmEnv:Math.random() * (family === 2 || family === 6 || family === 7 ? .35 : .75), fmTime:time(), velocityTimbre:Math.random() * .8, detune:Math.random(), tremolo:Math.random(), vibrato:Math.random()
+        fmEnv:Math.random() * (family === 2 || family === 6 || family === 7 || family === 15 ? .35 : .75), fmTime:time(), velocityTimbre:Math.random() * .8, detune:Math.random(), tremolo:Math.random(), vibrato:Math.random()
     })
 }
 
-// The view runs separately from the audio processor. Only host.data is shared.
+// Views communicate with the processor through parameters, custom data and streams.
 class MatrixView {
     constructor(host) {
         this.host = host
@@ -848,6 +858,7 @@ class MatrixView {
             const cell = document.createElement('button')
             cell.className = 'cell'
             cell.type = 'button'
+            this.subscriptions.push(host.attachParameter(cell, MATRIX_NAMES[i]))
             cell.innerHTML = `<span class="index">${this.roles[i]}</span><span class="digit"></span><span class="level"></span>`
             bindHint(host, cell, this.roles[i] + ': ' + this.descriptions[i])
             cell.addEventListener('pointerdown', event => this.start(event, i))
@@ -900,14 +911,15 @@ class MatrixView {
         panel.append(title, matrix, actions)
         root.append(style, panel)
         this.subscriptions.push(host.data.matrix.subscribe(() => this.render()))
+        watchParameters(host, MATRIX_NAMES, () => this.render(), this.subscriptions)
         this.render()
     }
     setStatus(text) { publishHint(this.host, text, true) }
     locked(i) { return !!this.host.data.matrix.get(i).lock }
-    value(i) { return this.host.data.matrix.get(i).value }
+    value(i) { return matrixValue(this.host, i) }
     set(i, value) {
         value = Math.max(0, Math.min(15, Math.round(value)))
-        if (this.value(i) !== value) this.host.data.matrix.set(i, { value })
+        if (this.value(i) !== value) setMatrixValue(this.host, i, value)
     }
     render() {
         for (let i = 0; i < 9; i++) {
@@ -1018,12 +1030,12 @@ class ToneView {
             ['partialTime', 'PARTIAL DECAY', 'Partial decay', 'Decay', 'Upper-overtone fade time'],
             ['fmEnv', 'FM', 'FM accent', 'Amount', 'Initial FM boost'],
             ['fmTime', 'FM', 'FM decay', 'Decay', 'FM boost fade time'],
-            ['detune', 'MOTION', 'Detune', 'Detune', 'Amount applied'],
-            ['tremolo', 'MOTION', 'Tremolo', 'Tremolo', 'Amount applied'],
-            ['vibrato', 'MOTION', 'Vibrato', 'Vibrato', 'Amount applied'],
+            ['detune', 'MOTION', 'Detune', 'Detune', 'Detune multiplier'],
+            ['tremolo', 'MOTION', 'Tremolo', 'Trem', 'Tremolo depth multiplier'],
+            ['vibrato', 'MOTION', 'Vibrato', 'Vib', 'Vibrato depth multiplier'],
             ['width', 'OUTPUT / EXPRESSION', 'Stereo width', 'Width', 'Stereo spread; 0 = mono'],
             ['saturation', 'OUTPUT / EXPRESSION', 'Saturation', 'Drive', 'Soft-clipping drive'],
-            ['velocityTimbre', 'OUTPUT / EXPRESSION', 'Velocity → Timbre', 'Velocity', 'Velocity sensitivity of brightness and FM']
+            ['velocityTimbre', 'OUTPUT / EXPRESSION', 'Velocity → Timbre', 'Vel', 'Velocity sensitivity of brightness and FM']
         ]
         const groups = new Map()
         for (const caption of new Set(definitions.map(([, group]) => group))) {
@@ -1049,6 +1061,7 @@ class ToneView {
             input.type = 'range'; input.min = 0; input.max = 1; input.step = .001
             input.setAttribute('aria-label', `${caption} ${shortLabel}`)
             input.setAttribute('aria-orientation', 'vertical')
+            this.subscriptions.push(host.attachParameter(input, name))
             const control = {name, input, value, gesture:null, drag:null}
             let dragged = false
             label.addEventListener('pointerdown', () => { dragged = false })
@@ -1105,7 +1118,7 @@ class ToneView {
             input.addEventListener('input', () => {
                 const normalized = Number(input.value)
                 const number = toneValue(name, Math.round(normalized * 1000))
-                const write = () => host.data.tone.set(0, { [name]:number })
+                const write = () => host.params[name].set(number)
                 if (control.gesture) control.gesture.edit(write)
                 else host.edit(write)
             })
@@ -1120,7 +1133,7 @@ class ToneView {
         const actions = document.createElement('div')
         actions.className = 'toneActions'
         for (const [caption, action, hint] of [
-            ['Shuffle', () => { host.edit(() => host.data.tone.set(0, randomTone(host.data.matrix.get(0).value))); status('Tone shuffled') }, 'Shuffle Tone'],
+            ['Shuffle', () => { host.edit(() => writeTone(host, randomTone(matrixValue(host, 0)))); status('Tone shuffled') }, 'Shuffle Tone'],
             ['Copy', () => this.clipboard.copy(), 'Copy Tone'], ['Paste', () => this.clipboard.paste(), 'Paste Tone']
         ]) {
             const button = document.createElement('button')
@@ -1131,7 +1144,7 @@ class ToneView {
         }
         panel.append(title, controls, actions)
         host.root.append(style, panel)
-        this.subscriptions.push(host.data.tone.subscribe(() => this.render()))
+        watchParameters(host, TONE_NAMES, () => this.render(), this.subscriptions)
         this.render()
     }
     applyTone(text) {
@@ -1139,7 +1152,7 @@ class ToneView {
         try { parsed = JSON.parse(text) } catch { return false }
         if (!parsed || parsed.format !== 'deminix.tone' || parsed.version !== 1 || !validTone(parsed.tone)) return false
         const tone = quantizedTone(parsed.tone)
-        this.host.edit(() => this.host.data.tone.set(0, tone))
+        this.host.edit(() => writeTone(this.host, tone))
         return true
     }
     render() {
@@ -1285,8 +1298,8 @@ class PatchView {
             return container
         }
         row([['Shuffle', () => {
-            host.edit(() => { const family = shuffleMatrix(host); host.data.tone.set(0, randomTone(family)) })
-            status('Matrix + Tone shuffled · locks preserved')
+            host.edit(() => { const family = shuffleMatrix(host); writeTone(host, randomTone(family)) })
+            status('Patch shuffled')
         }, 'Shuffle patch'],
             ['Copy', () => this.clipboard.copy(), 'Copy patch'],
             ['Paste', () => this.clipboard.paste(), 'Paste patch']
@@ -1303,10 +1316,8 @@ class PatchView {
             this.snapshotButtons.push(buttons[1])
         }
         host.root.append(style, panel)
-        for (const source of [host.data.matrix, host.data.tone, host.data.snapshots]) {
-            const subscription = source.subscribe(() => this.render())
-            this.subscriptions.push(subscription)
-        }
+        watchParameters(host, MATRIX_NAMES.concat(TONE_NAMES), () => this.render(), this.subscriptions)
+        this.subscriptions.push(host.data.snapshots.subscribe(() => this.render()))
         this.hintRevision = -1
         const hintSubscription = host.streams.uiHints.subscribe(values => {
             if (values[0] === this.hintRevision) return
@@ -1326,7 +1337,7 @@ class PatchView {
     }
     matrixValues() {
         const values = []
-        for (let i = 0; i < 9; i++) values.push(this.host.data.matrix.get(i).value)
+        for (let i = 0; i < 9; i++) values.push(matrixValue(this.host, i))
         return values
     }
     validMatrix(values) {
@@ -1336,8 +1347,8 @@ class PatchView {
         if (!this.validMatrix(matrix) || !validTone(tone)) return false
         const values = quantizedTone(tone)
         this.host.edit(() => {
-            for (let i = 0; i < 9; i++) this.host.data.matrix.set(i, {value:matrix[i]})
-            this.host.data.tone.set(0, values)
+            for (let i = 0; i < 9; i++) setMatrixValue(this.host, i, matrix[i])
+            writeTone(this.host, values)
         })
         return true
     }
