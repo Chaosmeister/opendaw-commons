@@ -48,8 +48,12 @@ wclaps/<slug>/meta.json
 wclaps/<slug>/source/
 ```
 
-Only source code goes into git, never a built binary. The CI builds the bundle from `source/` with a pinned
+Only source code goes into git, never a built plugin. The CI builds the bundle from `source/` with a pinned
 toolchain, so the plugin people load always matches the reviewed code.
+
+Data the plugin loads may be files: samples, wavetables, impulse responses, or code for a machine the plugin
+emulates. Name where each one comes from in a `README.md` in `source/`, and how to make it again if it is built from
+something (the tool, the command and its checksum). Sounds are always CC0.
 
 `source/build.sh` builds the plugin. The CI runs it with:
 
