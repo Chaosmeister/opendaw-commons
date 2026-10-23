@@ -1,0 +1,15 @@
+{
+  "name": "C64 SID",
+  "description": "One voice of the Commodore 64 SID chip, played polyphonically. Triangle, saw, pulse and noise with the chip's combined waveforms, hard sync and ring modulation against a partner oscillator, the SID envelope with its real rates, and the 6581 or 8580 filter with resonance. Edited in a blue C64 style view.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "synth",
+    "chiptune",
+    "c64",
+    "retro"
+  ],
+  "license": "CC0-1.0"
+}
