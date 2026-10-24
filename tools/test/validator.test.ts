@@ -126,7 +126,7 @@ describe("device scripts", () => {
         validate({[`scripts/${target}/demo/meta.json`]: meta(), [`scripts/${target}/demo/script.js`]: code})
     it("accepts every bundled example", async () => {
         const examples: Record<string, ReadonlyArray<string>> = {
-            werkstatt: ["parametric-eq", "alienator", "sidechain-mixer"],
+            werkstatt: ["parametric-eq", "alienator", "xy-filter"],
             apparat: ["wavetable", "grain-synthesizer", "tonematrix"],
             spielwerk: ["step-arp", "chord-generator", "pulsate"]
         }
@@ -138,8 +138,8 @@ describe("device scripts", () => {
         }
     })
     it("reports what the script declares", async () => {
-        const report = await device("werkstatt", exampleScript("werkstatt", "sidechain-mixer"))
-        assert.deepEqual(report.items[0].details, {label: "Sidechain Mixer", params: 3, samples: 0, sidechains: 2, view: false})
+        const report = await device("werkstatt", exampleScript("werkstatt", "xy-filter"))
+        assert.deepEqual(report.items[0].details, {label: "XY Filter", params: 4, samples: 0, sidechains: 0, view: true})
     })
     it("rejects syntax errors", async () => {
         const report = await device("werkstatt", "class Processor {\n process( {}\n}")

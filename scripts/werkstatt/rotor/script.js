@@ -3,10 +3,10 @@
 // @param turn 2 0 5 int [omit-default-ui]
 // @view 1 1 5 3
 // @window 560 420
-// @buffer shapes 1024
-// @stream state 9
+// @buffer shapes 1152
+// @stream state 10
 
-const EFFECTS = ["Drive", "Crush", "Ring", "Comb", "Filter", "Gate", "Echo", "Space"]
+const EFFECTS = ["Drive", "Crush", "Ring", "Comb", "LP", "HP", "Gate", "Echo", "Space"]
 const TURNS = [0.25, 0.5, 1, 2, 4, 8]
 const TURN_LABELS = ["¼", "½", "1", "2", "4", "8"]
 const icon = path => `<svg viewBox="0 0 9 9" fill="none" stroke="currentColor"><path d="${path}"/></svg>`
@@ -44,8 +44,8 @@ class Processor {
         this.combMask = powerOfTwoAbove(sampleRate * 0.05) - 1
         this.combL = new Float32Array(this.combMask + 1); this.combR = new Float32Array(this.combMask + 1)
         this.combDelay = sampleRate / 60
-        this.svf = new Float64Array(4)
-        this.k = 2; this.a1 = 1; this.a2 = 0; this.a3 = 0
+        this.lp = {state: new Float64Array(4), k: 2, a1: 1, a2: 0, a3: 0}
+        this.hp = {state: new Float64Array(4), k: 2, a1: 1, a2: 0, a3: 0}
         this.gate = 1
         this.echoMask = powerOfTwoAbove(sampleRate * 3) - 1
         this.echoL = new Float32Array(this.echoMask + 1); this.echoR = new Float32Array(this.echoMask + 1)
@@ -64,7 +64,7 @@ class Processor {
         if (name === "shapes") this.shapes.set(this.data.shapes)
     }
     reset() {
-        for (const buffer of [this.combL, this.combR, this.svf, this.echoL, this.echoR, this.echoDamp]) buffer.fill(0)
+        for (const buffer of [this.combL, this.combR, this.lp.state, this.hp.state, this.echoL, this.echoR, this.echoDamp]) buffer.fill(0)
         for (const side of this.combs) for (const comb of side) {comb.buffer.fill(0); comb.filter = 0}
         for (const side of this.allpasses) for (const allpass of side) allpass.buffer.fill(0)
         this.amounts.fill(0)
@@ -83,7 +83,7 @@ class Processor {
             this.mix += (this.mixTarget - this.mix) * this.smoothing
             const inL = srcL[i], inR = srcR[i]
             let l = inL, r = inR
-            const [drive, crush, ring, comb, filter, gate, echo, space] = this.amounts
+            const [drive, crush, ring, comb, lowpass, highpass, gate, echo, space] = this.amounts
             if (drive > 1e-4) {
                 const gain = 1 + drive * 24, makeup = Math.pow(gain, -0.6), blend = Math.min(1, drive * 8)
                 l += (Math.tanh(l * gain) * makeup - l) * blend
@@ -117,13 +117,21 @@ class Processor {
                 l += ((l + combedL) * 0.5 - l) * blend
                 r += ((r + combedR) * 0.5 - r) * blend
             }
-            if (filter > 1e-4) {
-                if ((i & 15) === 0) this.design(filter)
-                const blend = Math.min(1, filter * 20)
-                l += (this.lowpass(0, l) - l) * blend
-                r += (this.lowpass(2, r) - r) * blend
+            if (lowpass > 1e-4) {
+                if ((i & 15) === 0) this.design(this.lp, 20000 * Math.pow(2, -lowpass * 7), 2 - lowpass * 1.7)
+                const blend = Math.min(1, lowpass * 20)
+                l += (this.filter(this.lp, 0, l, false) - l) * blend
+                r += (this.filter(this.lp, 2, r, false) - r) * blend
             } else {
-                this.svf.fill(0)
+                this.lp.state.fill(0)
+            }
+            if (highpass > 1e-4) {
+                if ((i & 15) === 0) this.design(this.hp, 20 * Math.pow(2, highpass * 9), 2 - highpass * 1.4)
+                const blend = Math.min(1, highpass * 20)
+                l += (this.filter(this.hp, 0, l, true) - l) * blend
+                r += (this.filter(this.hp, 2, r, true) - r) * blend
+            } else {
+                this.hp.state.fill(0)
             }
             const step = Math.floor(position / 240) & 15
             const gateTarget = playing && GATE_PATTERN[step] === 0 ? 1 - gate : 1
@@ -170,22 +178,21 @@ class Processor {
         const a = line[index & mask], b = line[(index + 1) & mask]
         return a + (b - a) * fraction
     }
-    design(amount) {
-        const frequency = Math.min(20000 * Math.pow(2, -amount * 7), sampleRate * 0.45)
-        const g = Math.tan(Math.PI * frequency / sampleRate)
-        this.k = 2 - amount * 1.7
-        this.a1 = 1 / (1 + g * (g + this.k))
-        this.a2 = g * this.a1
-        this.a3 = g * this.a2
+    design(svf, frequency, k) {
+        const g = Math.tan(Math.PI * Math.min(frequency, sampleRate * 0.45) / sampleRate)
+        svf.k = k
+        svf.a1 = 1 / (1 + g * (g + k))
+        svf.a2 = g * svf.a1
+        svf.a3 = g * svf.a2
     }
-    lowpass(offset, input) {
-        const state = this.svf
+    filter(svf, offset, input, high) {
+        const state = svf.state
         const v3 = input - state[offset + 1]
-        const v1 = this.a1 * state[offset] + this.a2 * v3
-        const v2 = state[offset + 1] + this.a2 * state[offset] + this.a3 * v3
+        const v1 = svf.a1 * state[offset] + svf.a2 * v3
+        const v2 = state[offset + 1] + svf.a2 * state[offset] + svf.a3 * v3
         state[offset] = 2 * v1 - state[offset]
         state[offset + 1] = 2 * v2 - state[offset + 1]
-        return v2
+        return high ? input - svf.k * v1 - v2 : v2
     }
     reverb(side, input, amount) {
         const room = 0.8 + amount * 0.16, damp = 0.3
@@ -224,7 +231,7 @@ class View {
 .button:hover { color: rgba(255, 255, 255, 0.6) }
 .button.active { color: ${host.color("displayStroke")} }
 .button svg { display: block; width: 9px; height: 9px; margin: 2px 0 }
-.row { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 4px; height: 11px; font-size: 9px; cursor: pointer; user-select: none; color: rgba(255, 255, 255, 0.3) }
+.row { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 4px; height: 10px; font-size: 9px; cursor: pointer; user-select: none; color: rgba(255, 255, 255, 0.3) }
 .row.active { color: ${host.color("displayStroke")} }
 .row canvas { width: 100%; height: 3px; display: block; border-radius: 1px }
 .mix { color: ${host.color("orange", 0.7)}; cursor: ew-resize; touch-action: none }
