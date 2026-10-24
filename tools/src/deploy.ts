@@ -7,11 +7,13 @@ import {asDefined, isDefined, panic} from "@opendaw/lib-std"
 import {Build, CommunityWclap} from "./Build.ts"
 import {discover} from "./Layout.ts"
 import {Report} from "./Report.ts"
+import {Screenshots} from "./Screenshots.ts"
 import {sftpRemote, Upload} from "./Upload.ts"
 import {Validator} from "./Validator.ts"
 import {Wclaps} from "./Wclaps.ts"
 
 // --build validates, builds the WebCLAPs and writes the indices into --out, --upload sends --out to the server.
+// --screenshots <studio> renders every device script on that Studio's preview page into the scripts index.
 // The CI runs them in separate jobs, contributor build scripts never see the upload credentials.
 const {values} = parseArgs({
     options: {
@@ -19,7 +21,8 @@ const {values} = parseArgs({
         out: {type: "string"},
         remote: {type: "string", default: "/community"},
         build: {type: "boolean", default: false},
-        upload: {type: "boolean", default: false}
+        upload: {type: "boolean", default: false},
+        screenshots: {type: "string"}
     }
 })
 
@@ -53,6 +56,11 @@ if (values.build) {
         wclaps, previousWclaps: hasWclaps ? await previousWclaps() : []
     })
     console.log(`built ${report.items.length} items into ${out}`)
+    if (isDefined(values.screenshots)) {
+        const {rendered, failures} = await Screenshots.run(out, values.screenshots)
+        failures.forEach(failure => console.warn(`⚠ no screenshot for ${failure}`))
+        console.log(`rendered ${rendered} screenshots on ${values.screenshots}`)
+    }
 }
 if (values.upload) {
     const host = asDefined(process.env.SFTP_HOST, "SFTP_HOST missing")
