@@ -1,0 +1,14 @@
+{
+  "name": "Rotor",
+  "description": "Eight effects, each controlled by a drawn circle that turns with the transport.",
+  "author": {
+    "name": "André Michelle",
+    "github": "andremichelle"
+  },
+  "tags": [
+    "performance",
+    "modulation",
+    "view"
+  ],
+  "license": "CC0-1.0"
+}
