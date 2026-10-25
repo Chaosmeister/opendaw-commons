@@ -1,7 +1,7 @@
 // @label Deminix
 // @view MatrixView 1 1 4 3
-// @view ToneView 5 1 10 3
-// @view PatchView 15 1 3 3
+// @view ToneView 5 1 6 3
+// @view PatchView 11 1 3 3
 // @param family 5 0 15 int [omit-default-ui]
 // @param harmonics 5 0 15 int [omit-default-ui]
 // @param brightness 5 0 15 int [omit-default-ui]
@@ -1007,14 +1007,13 @@ class ToneView {
             .tone { grid-template-rows:12px minmax(0,1fr) 22px; }
             .title { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
             .toneActions button { flex:1; padding:3px; font-size:9px; }
-            .toneControls { display:grid; grid-template:minmax(0,1fr)/repeat(3,minmax(0,2fr)) repeat(2,minmax(0,3fr)); gap:4px; min-height:0; }
-            .tonePair { min-height:0; min-width:0; padding:2px 4px; border:1px solid ${familyColor('displayGrid', .15)}; border-radius:4px; display:grid; grid-template-rows:10px minmax(0,1fr); gap:1px; }
-            .pairTitle { font-size:8px; letter-spacing:.06em; }
-            .pairControls { display:grid; grid-template-columns:1fr 1fr; gap:7px; min-height:0; }
-            .tone label { display:grid; grid-template-rows:10px minmax(0,1fr) 10px; justify-items:center; gap:2px; min-width:0; min-height:0; font-size:9px; }
-            .value { font-size:9px; font-variant-numeric:tabular-nums; opacity:1; }
-            .tone input[type=range] { writing-mode:vertical-lr; direction:rtl; width:16px; height:100%; min-height:0; margin:0; touch-action:none; accent-color:${familyColor('displayStroke', .85)}; }
-            input:focus-visible { outline:1px solid ${familyColor('displayStroke', .75)}; outline-offset:2px; }
+            .toneControls { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(0,1fr)); grid-template-areas:"filter partial output" "fm motion output"; gap:3px; min-height:0; }
+            .tonePair { min-height:0; min-width:0; padding:2px 4px; border:1px solid ${familyColor('displayGrid', .15)}; border-radius:4px; display:grid; grid-template-rows:10px auto; align-content:start; gap:3px; }
+            .pairTitle { font-size:8px; letter-spacing:.03em; white-space:nowrap; }
+            .pairControls { display:grid; grid-template-columns:minmax(0,1fr); gap:2px; min-height:0; }
+            .toneControl { display:flex; align-items:center; justify-content:space-between; gap:3px; min-width:0; min-height:0; font-size:9px; }
+            .tone .valueButton { box-sizing:border-box; width:48px; flex:none; min-width:0; padding:1px 2px; font:inherit; font-variant-numeric:tabular-nums; cursor:ns-resize; touch-action:none; user-select:none; }
+            .tone .valueButton:focus-visible { outline:1px solid ${familyColor('displayStroke', .75)}; outline-offset:2px; }
         `
         const panel = document.createElement('div')
         panel.className = 'tone'
@@ -1041,88 +1040,69 @@ class ToneView {
         for (const caption of new Set(definitions.map(([, group]) => group))) {
             const pair = document.createElement('div')
             pair.className = 'tonePair'
+            pair.style.gridArea = {'FILTER':'filter', 'PARTIAL DECAY':'partial', 'FM':'fm', 'MOTION':'motion', 'OUTPUT / EXPRESSION':'output'}[caption]
             pair.setAttribute('role', 'group')
             pair.setAttribute('aria-label', caption)
             const heading = document.createElement('div')
-            heading.className = 'pairTitle'; heading.textContent = caption
+            heading.className = 'pairTitle'; heading.textContent = caption === 'OUTPUT / EXPRESSION' ? 'OUTPUT / EXPR.' : caption
             const body = document.createElement('div')
             body.className = 'pairControls'
-            if (caption === 'MOTION' || caption === 'OUTPUT / EXPRESSION') body.style.gridTemplateColumns = 'repeat(3,minmax(0,1fr))'
             pair.append(heading, body); controls.append(pair); groups.set(caption, body)
         }
         for (const [name, group, caption, shortLabel, hint] of definitions) {
-            const label = document.createElement('label')
-            bindHint(host, label, caption + ': ' + hint)
+            const label = document.createElement('div')
+            label.className = 'toneControl'
+            bindHint(host, label, caption + ': ' + hint + '. Drag up/down; hold Shift for fine adjustments.')
             const text = document.createElement('span')
             text.textContent = shortLabel
-            const value = document.createElement('span')
-            value.className = 'value'
-            const input = document.createElement('input')
-            input.type = 'range'; input.min = 0; input.max = 1; input.step = .001
-            input.setAttribute('aria-label', `${caption} ${shortLabel}`)
-            input.setAttribute('aria-orientation', 'vertical')
-            this.subscriptions.push(host.attachParameter(input, name))
-            const control = {name, input, value, gesture:null, drag:null}
-            let dragged = false
-            label.addEventListener('pointerdown', () => { dragged = false })
+            const valueButton = document.createElement('button')
+            valueButton.type = 'button'; valueButton.className = 'valueButton'
+            valueButton.setAttribute('aria-label', caption + ' ' + shortLabel)
+            this.subscriptions.push(host.attachParameter(valueButton, name))
+            const control = {name, valueButton, gesture:null, drag:null}
+            const writePosition = position => {
+                if (!Number.isFinite(position)) return
+                const step = Math.round(Math.max(0, Math.min(1, position)) * 1000)
+                if (step === toneStep(name, host.params[name].value)) return
+                const write = () => host.params[name].set(toneValue(name, step))
+                if (control.gesture) control.gesture.edit(write)
+                else host.edit(write)
+            }
             const end = event => {
+                if (control.drag && event.pointerId !== undefined && event.pointerId !== control.drag.pointerId) return
+                const drag = control.drag
                 control.drag = null
                 if (control.gesture) {
                     const gesture = control.gesture
                     control.gesture = null
                     gesture.end()
                 }
-                // Pointer editing must not leave arrow/space keys captured by the slider.
-                // Keyboard focus from Tab stays available until the user moves it.
-                if (event && event.type !== 'blur' && dragged) input.blur()
+                if (drag && valueButton.hasPointerCapture(drag.pointerId)) valueButton.releasePointerCapture(drag.pointerId)
             }
-            const writePosition = position => {
-                const step = Math.round(Math.max(0, Math.min(1, position)) * 1000)
-                if (step !== Math.round(Number(input.value) * 1000)) {
-                    input.value = step / 1000
-                    input.dispatchEvent(new Event('input', {bubbles:true}))
-                }
-            }
-            input.addEventListener('pointerdown', event => {
+            valueButton.addEventListener('pointerdown', event => {
                 if (event.button !== 0 || control.drag) return
-                event.preventDefault()
-                dragged = false
-                input.focus()
-                input.setPointerCapture(event.pointerId)
-                if (!control.gesture) control.gesture = host.gesture()
-                const rect = input.getBoundingClientRect()
-                const travel = Math.max(1, rect.height - 16)
-                let position = Number(input.value)
-                const thumbCenter = rect.bottom - 8 - position * travel
-                // Shift always anchors at the current value, even on a track click.
-                if (!event.shiftKey && Math.abs(event.clientY - thumbCenter) > 8) {
-                    position = Math.max(0, Math.min(1, (rect.bottom - event.clientY - 8) / travel))
-                }
-                control.drag = {pointerId:event.pointerId, lastY:event.clientY, position, travel}
-                writePosition(position)
+                event.preventDefault(); valueButton.focus(); valueButton.setPointerCapture(event.pointerId)
+                control.gesture = host.gesture()
+                control.drag = {pointerId:event.pointerId, lastY:event.clientY, position:toneStep(name, host.params[name].value) / 1000}
             })
-            input.addEventListener('pointermove', event => {
+            valueButton.addEventListener('pointermove', event => {
                 const drag = control.drag
                 if (!drag || event.pointerId !== drag.pointerId) return
                 event.preventDefault()
                 const distance = drag.lastY - event.clientY
-                if (distance !== 0) dragged = true
                 drag.lastY = event.clientY
-                drag.position = Math.max(0, Math.min(1, drag.position + distance / drag.travel * (event.shiftKey ? .1 : 1)))
+                drag.position = Math.max(0, Math.min(1, drag.position + distance / 200 * (event.shiftKey ? .1 : 1)))
                 writePosition(drag.position)
             })
-            for (const event of ['pointerup', 'pointercancel', 'lostpointercapture', 'blur']) input.addEventListener(event, end)
-            input.addEventListener('click', event => {
-                if (event.detail > 0 && dragged) queueMicrotask(() => input.blur())
+            for (const event of ['pointerup', 'pointercancel', 'lostpointercapture', 'blur']) valueButton.addEventListener(event, end)
+            valueButton.addEventListener('keydown', event => {
+                if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+                event.preventDefault()
+                const position = toneStep(name, host.params[name].value) / 1000
+                const step = event.shiftKey ? .001 : .01
+                writePosition(event.key === 'Home' ? 0 : event.key === 'End' ? 1 : position + (event.key === 'ArrowUp' ? step : -step))
             })
-            input.addEventListener('input', () => {
-                const normalized = Number(input.value)
-                const number = toneValue(name, Math.round(normalized * 1000))
-                const write = () => host.params[name].set(number)
-                if (control.gesture) control.gesture.edit(write)
-                else host.edit(write)
-            })
-            label.append(text, input, value)
+            label.append(text, valueButton)
             groups.get(group).append(label)
             this.controls.push(control)
         }
@@ -1159,9 +1139,8 @@ class ToneView {
         const tone = readTone(this.host)
         for (const control of this.controls) {
             const value = tone[control.name]
-            control.input.value = toneStep(control.name, value) / 1000
-            control.value.textContent = isToneTime(control.name) ? (value < .1 ? (value * 1000).toFixed(1) + ' ms' : value.toFixed(3) + ' s') : (value * 100).toFixed(1).replace(/\.0$/, '') + '%'
-            control.input.setAttribute('aria-valuetext', control.value.textContent)
+            control.valueButton.textContent = isToneTime(control.name) ? (value < .1 ? (value * 1000).toFixed(1) + ' ms' : value.toFixed(3) + ' s') : (value * 100).toFixed(1).replace(/\.0$/, '') + '%'
+            control.valueButton.setAttribute('aria-description', control.valueButton.textContent)
         }
     }
     terminate() {
