@@ -1,18 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://assets.opendaw.studio/community/schemas/preset.meta.json",
-  "title": "presets/<device>/<slug>/meta.json and dev/presets/<device>/<slug>/meta.json",
+  "title": "presets/<folder>/<name>/meta.json and dev/presets/<folder>/<name>/meta.json",
   "type": "object",
-  "required": ["uuid", "name", "description", "author", "tags", "license", "category", "device"],
+  "required": ["name", "description", "author", "tags", "license"],
   "properties": {
-    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
     "name": {"$ref": "common.meta.json#/properties/name"},
     "description": {"$ref": "common.meta.json#/properties/description"},
     "author": {"$ref": "common.meta.json#/properties/author"},
     "tags": {"$ref": "common.meta.json#/properties/tags"},
     "license": {"enum": ["CC0-1.0", "CC-BY-SA-4.0"]},
     "credits": {"type": "string", "minLength": 1, "maxLength": 1000},
-    "category": {"enum": ["instrument", "audio-effect", "midi-effect", "audio-unit"]},
     "device": {"type": "string", "pattern": "^[A-Z][A-Za-z0-9]{0,63}$"},
     "folder": {"type": "string", "pattern": "^[^/]+(?:/[^/]+)*$", "maxLength": 128}
   },

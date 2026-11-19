@@ -17,12 +17,8 @@ export type Meta = {
     readonly credits?: string
 }
 
-export type PresetCategory = "instrument" | "audio-effect" | "midi-effect" | "audio-unit"
-
 export type PresetMeta = Meta & {
-    readonly uuid: string
-    readonly category: PresetCategory
-    readonly device: string
+    readonly device?: string
     readonly folder?: string
 }
 

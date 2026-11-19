@@ -3,8 +3,8 @@ import fs from "node:fs"
 import path from "node:path"
 import {execFileSync} from "node:child_process"
 import {isAbsent, isDefined, Optional} from "@opendaw/lib-std"
-import {Item, PresetFolders, scriptFileOf} from "./Layout.ts"
-import {Author, Meta, PresetCategory, PresetMeta} from "./Meta.ts"
+import {Item, PresetFolders, PresetKind, scriptFileOf} from "./Layout.ts"
+import {Author, Meta, PresetMeta} from "./Meta.ts"
 import {Presets} from "./Presets.ts"
 import {ProjectScripts} from "./ProjectScripts.ts"
 import {ItemDetails, Report} from "./Report.ts"
@@ -58,7 +58,7 @@ export type CommunityPreset = {
     readonly tags: ReadonlyArray<string>
     readonly license: string
     readonly credits: string
-    readonly category: PresetCategory
+    readonly kind: PresetKind
     readonly device: string
     readonly folder: string
     readonly hasTimeline: Optional<boolean>
@@ -86,9 +86,9 @@ const supersedesOf = (slug: string, uuid: string, previous: ReadonlyArray<Commun
     return Array.from(new Set(older)).filter(id => id !== uuid)
 }
 
-// group + slug never change after the merge, so an item keeps its uuid across updates
-export const uuidOf = (item: Item): string => {
-    const bytes = crypto.createHash("sha256").update(`opendaw-commons:${item.path}`).digest().subarray(0, 16)
+// the path never changes after the merge, so an item keeps its uuid across updates, a dev preset keeps it on launch day
+export const uuidOf = (item: Pick<Item, "path">): string => {
+    const bytes = crypto.createHash("sha256").update(`opendaw-commons:${item.path.replace(/^dev\//, "")}`).digest().subarray(0, 16)
     bytes[6] = (bytes[6] & 0x0f) | 0x80
     bytes[8] = (bytes[8] & 0x3f) | 0x80
     const hex = bytes.toString("hex")
@@ -133,10 +133,12 @@ const writeIndex = (out: string, group: string, key: string, entries: ReadonlyAr
 // dev presets may use boxes this SDK does not know yet, then the Studio reads the timeline from the file itself
 const presetOf = (item: Item, group: string, options: BuildOptions): CommunityPreset => {
     const bytes = new Uint8Array(fs.readFileSync(Presets.fileOf(item)))
-    const {uuid, name, description, author, tags, license, credits, category, device, folder} = readMeta(item) as PresetMeta
+    const {name, description, author, tags, license, credits, device, folder} = readMeta(item) as PresetMeta
+    const uuid = uuidOf(item)
     const decoded = Presets.decode(bytes)
     return {
-        uuid, slug: item.slug, name, description, author, tags, license, credits: credits ?? "", category, device,
+        uuid, slug: item.slug, name, description, author, tags, license, credits: credits ?? "", kind: item.kind ?? "device",
+        device: device ?? "",
         folder: folder ?? "", hasTimeline: decoded.ok ? decoded.value.hasTimeline : undefined,
         ...writePayload(options.out, group, uuid, "odp", bytes),
         ...commitTimes(options.root, item),

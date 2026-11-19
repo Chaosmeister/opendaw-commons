@@ -1,0 +1,12 @@
+{
+  "name": "Brassssy 2",
+  "description": "Brass synth sound",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "device": "Tubular"
+}

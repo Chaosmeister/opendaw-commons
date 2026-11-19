@@ -11,12 +11,27 @@ export const Groups: ReadonlyArray<Group> = ["scripts", "wclaps", "presets"]
 
 export const PresetFolders = {release: "presets", dev: "dev/presets"} as const
 
+export type PresetKind = "device" | "rack" | "audio-effect-chain" | "midi-effect-chain"
+
+const KindFolders: Readonly<Record<string, PresetKind>> = {
+    "racks": "rack",
+    "audio-effect-chains": "audio-effect-chain",
+    "midi-effect-chains": "midi-effect-chain"
+}
+
+// MIDIOutput becomes midi-output, DattorroReverb dattorro-reverb
+export const deviceFolderOf = (key: string): string => key
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase()
+
 export const ScriptTargets: ReadonlyArray<ScriptTarget> = ["project", "werkstatt", "apparat", "spielwerk"]
 
 export type Item = {
     readonly group: Group
     readonly target: Optional<ScriptTarget>
-    readonly device?: string
+    readonly kind?: PresetKind
+    readonly folder?: string
     readonly dev?: boolean
     readonly slug: string
     readonly path: string
@@ -34,7 +49,6 @@ export const SizeLimits = {
 } as const
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const DEVICE = /^[A-Z][A-Za-z0-9]{0,63}$/
 const MAX_SLUG_LENGTH = 64
 const IGNORED = new Set([".gitkeep", ".DS_Store"])
 
@@ -95,12 +109,13 @@ const collectPresets = (root: string, relative: string, dev: boolean, report: Re
     if (!fs.existsSync(absolute)) {return []}
     const items: Array<Item> = []
     for (const entry of listEntries(absolute)) {
-        if (!entry.isDirectory() || !DEVICE.test(entry.name)) {
-            report.error(`${relative}/${entry.name}`, "Presets go into a folder named after their device key, for example Vaporisateur.")
+        if (!entry.isDirectory() || !isSlug(entry.name)) {
+            report.error(`${relative}/${entry.name}`, "Presets go into a folder named after their device in lowercase, for example vaporisateur or dattorro-reverb, or into racks, audio-effect-chains or midi-effect-chains.")
             continue
         }
+        const kind: PresetKind = Object.hasOwn(KindFolders, entry.name) ? KindFolders[entry.name] : "device"
         items.push(...collectFolder(root, `${relative}/${entry.name}`, "presets", undefined, report)
-            .map(item => ({...item, device: entry.name, dev})))
+            .map(item => ({...item, kind, folder: entry.name, dev})))
     }
     return items
 }

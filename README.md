@@ -19,12 +19,13 @@ The Studio never reads this repo directly. It only reads the generated indices.
 ```
 scripts/<target>/<slug>/             meta.json, script.ts or script.js
 wclaps/<slug>/                       meta.json, source/
-presets/<device>/<slug>/             meta.json, preset.odp
-dev/presets/<device>/<slug>/         meta.json, preset.odp, for the next release
+presets/<folder>/<slug>/             meta.json, preset.odp
+dev/presets/<folder>/<slug>/         meta.json, preset.odp, for the next release
 schemas/                             JSON schemas for every meta.json
 ```
 
-`<target>` is one of `project`, `werkstatt`, `apparat` or `spielwerk`.
+`<target>` is one of `project`, `werkstatt`, `apparat` or `spielwerk`. A preset `<folder>` is its device in lowercase
+(`vaporisateur`, `dattorro-reverb`), `racks`, `audio-effect-chains` or `midi-effect-chains`.
 
 ## License
 
