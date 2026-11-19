@@ -1,0 +1,15 @@
+{
+  "name": "openDrum 808",
+  "description": "A drum kit synthesized by the openDrum devices: kick, snare, three toms, rim shot, hand clap, closed and open hat, cowbell, cymbal, claves, three congas and maracas.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [
+    "drums",
+    "kit"
+  ],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "device": "Playfield"
+}
