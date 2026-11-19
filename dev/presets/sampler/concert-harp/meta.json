@@ -1,0 +1,10 @@
+{
+  "name": "Concert Harp",
+  "description": "An orchestral concert harp sampled from E0 to F6 and played across the whole keyboard, in two velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["harp", "orchestral", "plucked", "strings", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Plucked"
+}
