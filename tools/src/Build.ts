@@ -62,6 +62,9 @@ export type CommunityPreset = {
     readonly device: string
     readonly folder: string
     readonly hasTimeline: Optional<boolean>
+    readonly samples: ReadonlyArray<string>
+    readonly soundfonts: ReadonlyArray<string>
+    readonly downloadSize: number
     readonly url: string
     readonly size: number
     readonly created: number
@@ -76,6 +79,7 @@ export type BuildOptions = {
     readonly now: Date
     readonly wclaps?: ReadonlyMap<string, BuiltWclap>
     readonly previousWclaps?: ReadonlyArray<CommunityWclap>
+    readonly assetSizes?: ReadonlyMap<string, number>
 }
 
 // a rebuilt plugin names its older builds, the Studio offers the update to projects that still use one
@@ -136,10 +140,14 @@ const presetOf = (item: Item, group: string, options: BuildOptions): CommunityPr
     const {name, description, author, tags, license, credits, device, folder} = readMeta(item) as PresetMeta
     const uuid = uuidOf(item)
     const decoded = Presets.decode(bytes)
+    const scanned = Presets.scan(bytes)
+    const {samples, soundfonts} = scanned.ok ? scanned.value : {samples: [], soundfonts: []}
+    const sizes = [...samples, ...soundfonts].map(uuid => options.assetSizes?.get(uuid) ?? 0)
     return {
         uuid, slug: item.slug, name, description, author, tags, license, credits: credits ?? "", kind: item.kind ?? "device",
         device: device ?? "",
         folder: folder ?? "", hasTimeline: decoded.ok ? decoded.value.hasTimeline : undefined,
+        samples, soundfonts, downloadSize: sizes.includes(0) ? 0 : sizes.reduce((sum, size) => sum + size, 0),
         ...writePayload(options.out, group, uuid, "odp", bytes),
         ...commitTimes(options.root, item),
         source: `https://github.com/${options.repository}/tree/main/${item.path}`

@@ -12,6 +12,8 @@ import {Report} from "../src/Report.ts"
 import {Remote, Upload} from "../src/Upload.ts"
 import {Summary} from "../src/Summary.ts"
 import {Validator} from "../src/Validator.ts"
+import {ByteArrayOutput, UUID} from "@opendaw/lib-std"
+import {PresetHeader} from "@opendaw/studio-adapters"
 
 // real stock presets: Delay without samples, Playfield with cloud samples
 const stock = (device: string, slug: string): Uint8Array =>
@@ -36,7 +38,8 @@ const delayAt = (folder: string, overrides: Record<string, unknown> = {}) => ({
 
 const fakeAssets = (samples: ReadonlyArray<string>): CloudAssets => ({
     hasSample: async uuid => samples.includes(uuid),
-    hasSoundfont: async () => true
+    hasSoundfont: async () => true,
+    sizeOf: async () => 1000
 })
 
 describe("Preset layout and meta", () => {
@@ -169,7 +172,7 @@ const git = (root: string, args: ReadonlyArray<string>): void => {
     execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", ...args], {cwd: root, env, stdio: "pipe"})
 }
 
-const buildOf = (files: Record<string, string | Uint8Array>) => {
+const buildOf = (files: Record<string, string | Uint8Array>, assetSizes?: ReadonlyMap<string, number>) => {
     const root = makeRepo(files)
     git(root, ["init", "-q"])
     git(root, ["add", "-A"])
@@ -177,7 +180,7 @@ const buildOf = (files: Record<string, string | Uint8Array>) => {
     const report = Validator.run(root)
     assert.deepEqual(messages(report), [])
     const out = fs.mkdtempSync(path.join(os.tmpdir(), "presets-out-"))
-    Build.run(discover(root, new Report()), report, {root, out, repository: "owner/repo", now: new Date("2026-11-19T12:00:00Z")})
+    Build.run(discover(root, new Report()), report, {root, out, repository: "owner/repo", now: new Date("2026-11-19T12:00:00Z"), assetSizes})
     return out
 }
 
@@ -217,6 +220,85 @@ describe("Preset build", () => {
         const out = buildOf(script)
         assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out, "presets/index.json"), "utf8")).presets, [])
         assert.deepEqual(JSON.parse(fs.readFileSync(path.join(out, "dev/presets/index.json"), "utf8")).presets, [])
+    })
+})
+
+// a preset holding one box the SDK does not know and one AudioFileBox, written the way BoxGraph writes boxes
+const unknownBoxesPreset = (sample: string): Uint8Array => {
+    const boxes = [["FutureSamplerBox", "11111111-2222-4333-8444-555555555555"], ["AudioFileBox", sample]].map(([name, uuid]) => {
+        const output = ByteArrayOutput.create()
+        output.writeInt(0)
+        output.writeString(name)
+        output.writeBytes(new Int8Array(UUID.parse(uuid).buffer))
+        output.writeInt(42)
+        return new Int8Array(output.toArrayBuffer())
+    })
+    const output = ByteArrayOutput.create()
+    output.writeInt(PresetHeader.MAGIC_HEADER_OPEN)
+    output.writeInt(PresetHeader.FORMAT_VERSION)
+    output.writeInt(boxes.length)
+    boxes.forEach(box => {
+        output.writeInt(box.byteLength)
+        output.writeBytes(box)
+    })
+    return new Uint8Array(output.toArrayBuffer())
+}
+
+describe("Preset download size", () => {
+    it("scans the same samples the decoder finds", () => {
+        const decoded = Presets.decode(PLAYFIELD)
+        const scanned = Presets.scan(PLAYFIELD)
+        assert.ok(decoded.ok && scanned.ok)
+        assert.ok(scanned.value.samples.length > 0)
+        assert.deepEqual(scanned.value.samples.toSorted(), decoded.value.samples.toSorted())
+        assert.deepEqual(Presets.scan(DELAY), {ok: true, value: {samples: [], soundfonts: []}})
+    })
+    it("scans boxes the SDK does not know", () => {
+        const sample = "0f0e0d0c-0b0a-4908-8706-050403020100"
+        assert.ok(!Presets.decode(unknownBoxesPreset(sample)).ok)
+        assert.deepEqual(Presets.scan(unknownBoxesPreset(sample)), {ok: true, value: {samples: [sample], soundfonts: []}})
+        assert.match(String((Presets.scan(new TextEncoder().encode("not a preset at all")) as { error: string }).error), /not an openDAW preset/)
+    })
+    it("asks the cloud once per file", async () => {
+        const root = makeRepo({
+            "presets/playfield/a/meta.json": presetMeta({device: "Playfield"}), "presets/playfield/a/preset.odp": PLAYFIELD,
+            "dev/presets/playfield/b/meta.json": presetMeta({device: "Playfield"}), "dev/presets/playfield/b/preset.odp": PLAYFIELD
+        })
+        const asked: Array<string> = []
+        const sizes = await Presets.sizes(discover(root, new Report()), {
+            ...fakeAssets([]), sizeOf: async (kind, uuid) => {
+                asked.push(`${kind}/${uuid}`)
+                return 1000
+            }
+        })
+        const samples = (Presets.scan(PLAYFIELD) as { value: { samples: ReadonlyArray<string> } }).value.samples
+        assert.equal(asked.length, new Set(samples).size)
+        assert.equal(sizes.size, new Set(samples).size)
+    })
+    it("writes samples, soundfonts and the download size into the index", () => {
+        const samples = (Presets.scan(PLAYFIELD) as { value: { samples: ReadonlyArray<string> } }).value.samples
+        const sample = "0f0e0d0c-0b0a-4908-8706-050403020100"
+        const known = new Map([...samples.map(uuid => [uuid, 1000] as const), [sample, 5000]])
+        const out = buildOf({
+            ...delayAt("presets/delay/flanger"),
+            "presets/playfield/kit/meta.json": presetMeta({device: "Playfield", name: "Kit"}),
+            "presets/playfield/kit/preset.odp": PLAYFIELD,
+            "dev/presets/sampler/next/meta.json": presetMeta({device: "Sampler", name: "Next"}),
+            "dev/presets/sampler/next/preset.odp": unknownBoxesPreset(sample)
+        }, known)
+        const read = (group: string) => JSON.parse(fs.readFileSync(path.join(out, group, "index.json"), "utf8")) as { presets: ReadonlyArray<CommunityPreset> }
+        const [kit, flanger] = read("presets").presets
+        assert.deepEqual([flanger.samples, flanger.soundfonts, flanger.downloadSize], [[], [], 0])
+        assert.equal(kit.samples.length, samples.length)
+        assert.equal(kit.downloadSize, samples.length * 1000)
+        const [next] = read("dev/presets").presets
+        assert.deepEqual([next.samples, next.downloadSize], [[sample], 5000])
+    })
+    it("writes 0 when a size is unknown", () => {
+        const out = buildOf({"presets/playfield/kit/meta.json": presetMeta({device: "Playfield"}), "presets/playfield/kit/preset.odp": PLAYFIELD})
+        const [kit] = JSON.parse(fs.readFileSync(path.join(out, "presets/index.json"), "utf8")).presets as ReadonlyArray<CommunityPreset>
+        assert.ok(kit.samples.length > 0)
+        assert.equal(kit.downloadSize, 0)
     })
 })
 
