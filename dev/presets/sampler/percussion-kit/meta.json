@@ -1,0 +1,10 @@
+{
+  "name": "Percussion Kit",
+  "description": "Small percussion as a kit on the keys C3 to F#4: woodblock, claps, large shaker, slapstick, anvil and two brake drums, in velocity layers with round robins, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["percussion", "woodblock", "claps", "shaker", "anvil", "kit", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Drums"
+}
