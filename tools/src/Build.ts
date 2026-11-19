@@ -80,6 +80,7 @@ export type BuildOptions = {
     readonly wclaps?: ReadonlyMap<string, BuiltWclap>
     readonly previousWclaps?: ReadonlyArray<CommunityWclap>
     readonly assetSizes?: ReadonlyMap<string, number>
+    readonly presetsOnly?: boolean
 }
 
 // a rebuilt plugin names its older builds, the Studio offers the update to projects that still use one
@@ -159,6 +160,13 @@ export namespace Build {
     export const run = (items: ReadonlyArray<Item>, report: Report, options: BuildOptions): void => {
         const detailsOf = (item: Item): ItemDetails => report.items.find(entry => entry.path === item.path)?.details ?? {}
         const byName = (left: { name: string }, right: { name: string }) => left.name.localeCompare(right.name)
+        for (const dev of [false, true]) {
+            const group = dev ? PresetFolders.dev : PresetFolders.release
+            const presets = items.filter(item => item.group === "presets" && (item.dev === true) === dev)
+                .map(item => presetOf(item, group, options))
+            writeIndex(options.out, group, "presets", presets.toSorted(byName), options.now)
+        }
+        if (options.presetsOnly === true) {return}
         const scripts = items.filter(item => item.group === "scripts").flatMap((item): ReadonlyArray<CommunityScript> => {
             const file = scriptFileOf(item)
             if (!isDefined(file) || !isDefined(item.target)) {return []}
@@ -187,11 +195,5 @@ export namespace Build {
         fs.writeFileSync(path.join(options.out, "wclaps", "index.json"), JSON.stringify({
             version: 1, updatedAt: options.now.toISOString(), folders: [{name: "Community", wclaps: wclaps.toSorted(byName)}]
         }, null, 2) + "\n")
-        for (const dev of [false, true]) {
-            const group = dev ? PresetFolders.dev : PresetFolders.release
-            const presets = items.filter(item => item.group === "presets" && (item.dev === true) === dev)
-                .map(item => presetOf(item, group, options))
-            writeIndex(options.out, group, "presets", presets.toSorted(byName), options.now)
-        }
     }
 }

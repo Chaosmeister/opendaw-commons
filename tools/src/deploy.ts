@@ -5,6 +5,7 @@ import {parseArgs} from "node:util"
 import SftpClient from "ssh2-sftp-client"
 import {asDefined, isDefined, panic} from "@opendaw/lib-std"
 import {Build, CommunityWclap} from "./Build.ts"
+import {Indices} from "./Indices.ts"
 import {discover} from "./Layout.ts"
 import {Presets} from "./Presets.ts"
 import {Report} from "./Report.ts"
@@ -15,6 +16,8 @@ import {Wclaps} from "./Wclaps.ts"
 
 // --build validates, builds the WebCLAPs and writes the indices into --out, --upload sends --out to the server.
 // --screenshots <studio> renders every device script on that Studio's preview page into the scripts index.
+// --presets-only builds only the preset indices, for a merge that touches nothing but presets/ and dev/presets/.
+// --drop-unchanged leaves out every index whose content equals the live one, so it is not uploaded again.
 // The CI runs them in separate jobs, contributor build scripts never see the upload credentials.
 const {values} = parseArgs({
     options: {
@@ -23,7 +26,9 @@ const {values} = parseArgs({
         remote: {type: "string", default: "/community"},
         build: {type: "boolean", default: false},
         upload: {type: "boolean", default: false},
-        screenshots: {type: "string"}
+        screenshots: {type: "string"},
+        "presets-only": {type: "boolean", default: false},
+        "drop-unchanged": {type: "boolean", default: false}
     }
 })
 
@@ -44,7 +49,8 @@ if (values.build) {
     const assets = Presets.cloudAssets()
     await Validator.checkPresetAssets(root, report, assets)
     const items = discover(root, new Report())
-    const hasWclaps = items.some(item => item.group === "wclaps")
+    const presetsOnly = values["presets-only"]
+    const hasWclaps = !presetsOnly && items.some(item => item.group === "wclaps")
     const wclaps = hasWclaps && report.ok
         ? await Validator.buildWclaps(root, report, Wclaps.clapIncludeFromEnv())
         : new Map()
@@ -56,13 +62,18 @@ if (values.build) {
     fs.rmSync(out, {recursive: true, force: true})
     Build.run(items, report, {
         root, out, repository: process.env.GITHUB_REPOSITORY ?? "andremichelle/opendaw-commons", now: new Date(),
-        wclaps, previousWclaps: hasWclaps ? await previousWclaps() : [], assetSizes: await Presets.sizes(items, assets)
+        wclaps, previousWclaps: hasWclaps ? await previousWclaps() : [], assetSizes: await Presets.sizes(items, assets),
+        presetsOnly
     })
     console.log(`built ${report.items.length} items into ${out}`)
-    if (isDefined(values.screenshots)) {
+    if (isDefined(values.screenshots) && !presetsOnly) {
         const {rendered, failures} = await Screenshots.run(out, values.screenshots)
         failures.forEach(failure => console.warn(`⚠ no screenshot for ${failure}`))
         console.log(`rendered ${rendered} screenshots on ${values.screenshots}`)
+    }
+    if (values["drop-unchanged"]) {
+        const unchanged = Indices.dropUnchanged(out, await Indices.live())
+        unchanged.forEach(group => console.log(`= ${group}/index.json unchanged, not uploaded`))
     }
 }
 if (values.upload) {
