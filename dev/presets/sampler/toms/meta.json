@@ -1,0 +1,10 @@
+{
+  "name": "Toms",
+  "description": "A low and a high tom as a kit on the keys C3 to G3: hits and rolls with sticks and with mallets, in velocity layers with round robins, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["toms", "drums", "kit", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Drums"
+}
