@@ -2,7 +2,7 @@
   "name": "Frame Drum",
   "description": "A large and a small frame drum as a kit on the keys C3 to D#3: open and muted hits in velocity layers with round robins, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
-  "tags": ["frame drum", "drums", "percussion", "kit", "vcsl"],
+  "tags": ["frame-drum", "drums", "percussion", "kit", "vcsl"],
   "license": "CC0-1.0",
   "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
   "device": "Sampler",
