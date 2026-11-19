@@ -1,0 +1,12 @@
+{
+  "name": "Mono Bass",
+  "description": "Narrows the stereo image of frequencies below 240Hz.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "device": "FrequencySplit"
+}

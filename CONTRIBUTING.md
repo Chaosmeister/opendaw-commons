@@ -74,44 +74,44 @@ the file with Load Plugin, Import WebCLAP...
 ### Presets
 
 ```
-presets/<device>/<slug>/meta.json
-presets/<device>/<slug>/preset.odp
-dev/presets/<device>/<slug>/meta.json
-dev/presets/<device>/<slug>/preset.odp
+presets/<folder>/<slug>/meta.json
+presets/<folder>/<slug>/preset.odp
+dev/presets/<folder>/<slug>/meta.json
+dev/presets/<folder>/<slug>/preset.odp
 ```
 
-`<device>` is the device key, for example `Vaporisateur`, `Delay` or `Playfield`. A rack preset lies in the folder of
-its instrument. `preset.odp` is the file the Studio saves for a preset.
+`<folder>` is one of:
+
+1. The device in lowercase with hyphens, for example `vaporisateur`, `delay`, `dattorro-reverb` or `midi-output`.
+2. `racks` for a rack, an instrument with its effects.
+3. `audio-effect-chains` or `midi-effect-chains` for a chain of effects.
+
+`preset.odp` is the preset as the Studio saves it, with **Save for Community…** on your preset in the device browser.
 
 1. `presets/` holds presets that work with the openDAW release on opendaw.studio. The check decodes every preset,
-   requires the device of its folder, and requires that every sample and soundfont it plays is in the openDAW cloud.
-   Presets never bring samples of their own.
+   requires its device, and requires that every sample and soundfont it plays is in the openDAW cloud. Presets never
+   bring samples of their own.
 2. `dev/presets/` collects presets that need a feature only the next release has. Only `meta.json` is checked, the
    preset is tested on dev.opendaw.studio. On the day the release goes live, `npm run launch-presets` moves them all
-   into `presets/` and runs the full check.
-
-A preset's `meta.json` carries its own `uuid`, written once when the preset is added and never changed, so the
-preset keeps its id when it moves out of `dev/` or gets a new slug.
+   into `presets/` and runs the full check. A preset keeps its id when it moves.
 
 ```json
 {
-  "uuid": "4f0c2a8e-6b1d-4c3a-9e57-2d8b1f6a3c90",
   "name": "Warm Pad",
   "description": "A slow, warm pad with a soft filter sweep.",
   "author": {"name": "Jane Doe", "github": "janedoe"},
   "tags": ["pad"],
   "license": "CC0-1.0",
-  "category": "instrument",
   "device": "Vaporisateur",
   "folder": "Pads"
 }
 ```
 
-1. `category` is `instrument`, `audio-effect`, `midi-effect` or `audio-unit` (a rack).
-2. `device` matches the folder.
-3. `license` is `CC0-1.0` or `CC-BY-SA-4.0`. CC-BY-SA needs `credits`. A preset that plays CC-BY-SA samples says in
+1. `device` is the device key as the Studio names it, `Vaporisateur` for the `vaporisateur` folder. A rack names its
+   instrument. A chain has no `device`.
+2. `license` is `CC0-1.0` or `CC-BY-SA-4.0`. CC-BY-SA needs `credits`. A preset that plays CC-BY-SA samples says in
    its description that songs made with it fall under CC-BY-SA.
-4. `folder` is optional and places the preset in a folder of the preset browser, `Pads` or `Keys/Pianos`.
+3. `folder` is optional and places the preset in a folder of the preset browser, `Pads` or `Keys/Pianos`.
 
 ## meta.json
 

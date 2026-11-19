@@ -1,0 +1,12 @@
+{
+  "name": "Retro Pluck",
+  "description": "A game-ish retro synth sound",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "device": "Vaporisateur"
+}

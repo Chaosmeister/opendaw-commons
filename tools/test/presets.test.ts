@@ -5,8 +5,8 @@ import os from "node:os"
 import path from "node:path"
 import {execFileSync} from "node:child_process"
 import {makeRepo, messages, RepoRoot, validate} from "./helpers.ts"
-import {Build, CommunityPreset} from "../src/Build.ts"
-import {discover} from "../src/Layout.ts"
+import {Build, CommunityPreset, uuidOf} from "../src/Build.ts"
+import {deviceFolderOf, discover} from "../src/Layout.ts"
 import {CloudAssets, Presets} from "../src/Presets.ts"
 import {Report} from "../src/Report.ts"
 import {Remote, Upload} from "../src/Upload.ts"
@@ -16,17 +16,15 @@ import {Validator} from "../src/Validator.ts"
 // real stock presets: Delay without samples, Playfield with cloud samples
 const stock = (device: string, slug: string): Uint8Array =>
     new Uint8Array(fs.readFileSync(path.join(RepoRoot, "presets", device, slug, "preset.odp")))
-const DELAY = stock("Delay", "flanger")
-const PLAYFIELD = stock("Playfield", "tr-909")
+const DELAY = stock("delay", "flanger")
+const PLAYFIELD = stock("playfield", "tr-909")
 
 const presetMeta = (overrides: Record<string, unknown> = {}): string => JSON.stringify({
-    uuid: "11111111-2222-4333-8444-555555555555",
     name: "Test Preset",
     description: "A test preset.",
     author: {name: "Tester"},
     tags: ["test"],
     license: "CC0-1.0",
-    category: "audio-effect",
     device: "Delay",
     ...overrides
 })
@@ -43,9 +41,9 @@ const fakeAssets = (samples: ReadonlyArray<string>): CloudAssets => ({
 
 describe("Preset layout and meta", () => {
     it("accepts a stock preset", () => {
-        const report = validate(delayAt("presets/Delay/flanger"))
+        const report = validate(delayAt("presets/delay/flanger"))
         assert.deepEqual(messages(report), [])
-        assert.equal(report.items[0].group, "presets/Delay")
+        assert.equal(report.items[0].group, "presets/delay")
         assert.equal(report.items[0].details.timeline, false)
     })
     it("accepts every stock preset in the repo", () => {
@@ -53,61 +51,76 @@ describe("Preset layout and meta", () => {
         assert.deepEqual(messages(report), [])
         assert.equal(report.items.filter(item => item.group.startsWith("presets/")).length, 71)
     })
-    it("needs a device folder named after the device key", () => {
-        assert.match(messages(validate(delayAt("presets/delay/flanger"))).join(), /folder named after their device key/)
-        assert.match(messages(validate({"presets/flanger.odp": DELAY})).join(), /folder named after their device key/)
+    it("names device folders in lowercase with hyphens", () => {
+        assert.match(messages(validate(delayAt("presets/Delay/flanger"))).join(), /folder named after their device in lowercase/)
+        assert.match(messages(validate({"presets/flanger.odp": DELAY})).join(), /folder named after their device in lowercase/)
+        assert.deepEqual(["MIDIOutput", "DattorroReverb", "StereoTool", "OpenDrumKick", "Delay"].map(deviceFolderOf),
+            ["midi-output", "dattorro-reverb", "stereo-tool", "open-drum-kick", "delay"])
     })
     it("rejects a device that differs from its folder", () => {
-        assert.match(messages(validate(delayAt("presets/Crusher/flanger"))).join(), /device is Delay but the preset lies in the Crusher folder/)
+        assert.match(messages(validate(delayAt("presets/crusher/flanger"))).join(), /device Delay belongs into the delay folder, not into crusher/)
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {device: undefined}))).join(), /device is missing/)
     })
     it("rejects a preset that holds another device", () => {
-        assert.match(messages(validate(delayAt("presets/Crusher/flanger", {device: "Crusher"}))).join(), /holds no Crusher device/)
+        assert.match(messages(validate(delayAt("presets/crusher/flanger", {device: "Crusher"}))).join(), /holds no Crusher device/)
     })
     it("needs preset.odp and rejects other files", () => {
-        assert.match(messages(validate({"presets/Delay/flanger/meta.json": presetMeta()})).join(), /Missing preset.odp/)
-        const extra = validate({...delayAt("presets/Delay/flanger"), "presets/Delay/flanger/notes.txt": "x"})
+        assert.match(messages(validate({"presets/delay/flanger/meta.json": presetMeta()})).join(), /Missing preset.odp/)
+        const extra = validate({...delayAt("presets/delay/flanger"), "presets/delay/flanger/notes.txt": "x"})
         assert.match(messages(extra).join(), /Unexpected file/)
     })
     it("rejects a file that is no preset", () => {
-        const report = validate({"presets/Delay/flanger/meta.json": presetMeta(), "presets/Delay/flanger/preset.odp": "not a preset"})
+        const report = validate({"presets/delay/flanger/meta.json": presetMeta(), "presets/delay/flanger/preset.odp": "not a preset"})
         assert.match(messages(report).join(), /not an openDAW preset/)
-        const short = validate({"presets/Delay/flanger/meta.json": presetMeta(), "presets/Delay/flanger/preset.odp": "abc"})
+        const short = validate({"presets/delay/flanger/meta.json": presetMeta(), "presets/delay/flanger/preset.odp": "abc"})
         assert.match(messages(short).join(), /too short/)
     })
     it("needs credits for CC-BY-SA and allows them for CC0", () => {
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {license: "CC-BY-SA-4.0"}))).join(), /credits/)
-        assert.deepEqual(messages(validate(delayAt("presets/Delay/flanger", {license: "CC-BY-SA-4.0", credits: "Someone"}))), [])
-        assert.deepEqual(messages(validate(delayAt("presets/Delay/flanger", {credits: "Someone"}))), [])
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {license: "CC-BY-SA-4.0"}))).join(), /credits/)
+        assert.deepEqual(messages(validate(delayAt("presets/delay/flanger", {license: "CC-BY-SA-4.0", credits: "Someone"}))), [])
+        assert.deepEqual(messages(validate(delayAt("presets/delay/flanger", {credits: "Someone"}))), [])
     })
-    it("rejects other licenses, categories and unknown fields", () => {
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {license: "MIT"}))).join(), /license/)
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {category: "audio-effect-chain"}))).join(), /category/)
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {minApi: 1}))).join(), /minApi/)
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {uuid: "not-a-uuid"}))).join(), /uuid/)
+    it("rejects other licenses and fields the CI computes", () => {
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {license: "MIT"}))).join(), /license/)
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {category: "audio-effect"}))).join(), /category/)
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {minApi: 1}))).join(), /minApi/)
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {uuid: "11111111-2222-4333-8444-555555555555"}))).join(), /uuid/)
+    })
+    it("takes racks with their instrument and chains without a device", () => {
+        assert.match(messages(validate(delayAt("presets/racks/dub", {device: undefined}))).join(), /A rack needs its instrument as device/)
+        assert.match(messages(validate(delayAt("presets/racks/dub", {device: "Vaporisateur"}))).join(), /holds no Vaporisateur device/)
+        assert.match(messages(validate(delayAt("presets/audio-effect-chains/dub"))).join(), /A chain has no device/)
+        const chain = validate(delayAt("presets/audio-effect-chains/dub", {device: undefined}))
+        assert.deepEqual(messages(chain), [])
+        assert.equal(chain.items[0].details.kind, "audio-effect-chain")
     })
     it("needs a description and allows a folder", () => {
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {description: ""}))).join(), /description/)
-        const report = validate(delayAt("presets/Delay/flanger", {folder: "Modulation/Flangers"}))
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {description: ""}))).join(), /description/)
+        const report = validate(delayAt("presets/delay/flanger", {folder: "Modulation/Flangers"}))
         assert.deepEqual(messages(report), [])
-        assert.match(messages(validate(delayAt("presets/Delay/flanger", {folder: "/Modulation"}))).join(), /folder/)
+        assert.match(messages(validate(delayAt("presets/delay/flanger", {folder: "/Modulation"}))).join(), /folder/)
     })
-    it("rejects a uuid used twice, also across presets and dev/presets", () => {
-        const twice = validate({...delayAt("presets/Delay/flanger"), ...delayAt("presets/Delay/flanger-2")})
-        assert.match(messages(twice).join(), /already used by presets\/Delay\/flanger/)
-        const across = validate({...delayAt("presets/Delay/flanger"), ...delayAt("dev/presets/Delay/flanger-2")})
-        assert.match(messages(across).join(), /already used/)
+    it("rejects a dev preset whose path exists in presets", () => {
+        const both = validate({...delayAt("presets/delay/flanger"), ...delayAt("dev/presets/delay/flanger")})
+        assert.match(messages(both).join(), /presets\/delay\/flanger exists already/)
+    })
+    it("gives a dev preset the id it keeps in presets", () => {
+        const dev = validate(delayAt("dev/presets/delay/flanger")).items[0].details.id
+        const release = validate(delayAt("presets/delay/flanger")).items[0].details.id
+        assert.equal(dev, release)
+        assert.equal(release, uuidOf({path: "presets/delay/flanger"}))
     })
 })
 
 describe("Dev presets", () => {
     it("checks only meta.json", () => {
-        const report = validate({"dev/presets/Delay/new/meta.json": presetMeta(), "dev/presets/Delay/new/preset.odp": "future boxes"})
+        const report = validate({"dev/presets/delay/new/meta.json": presetMeta(), "dev/presets/delay/new/preset.odp": "future boxes"})
         assert.deepEqual(messages(report), [])
-        assert.equal(report.items[0].group, "dev/presets/Delay")
+        assert.equal(report.items[0].group, "dev/presets/delay")
         assert.equal(report.items[0].details.stage, "dev")
     })
     it("still checks the meta.json", () => {
-        const report = validate({"dev/presets/Delay/new/meta.json": presetMeta({license: "MIT"}), "dev/presets/Delay/new/preset.odp": "x"})
+        const report = validate({"dev/presets/delay/new/meta.json": presetMeta({license: "MIT"}), "dev/presets/delay/new/preset.odp": "x"})
         assert.match(messages(report).join(), /license/)
     })
     it("allows only presets in dev", () => {
@@ -123,8 +136,8 @@ describe("Preset cloud assets", () => {
     }
     it("passes when every sample is in the cloud", async () => {
         const root = makeRepo({
-            "presets/Playfield/kit/meta.json": presetMeta({device: "Playfield", category: "instrument"}),
-            "presets/Playfield/kit/preset.odp": PLAYFIELD
+            "presets/playfield/kit/meta.json": presetMeta({device: "Playfield"}),
+            "presets/playfield/kit/preset.odp": PLAYFIELD
         })
         const report = Validator.run(root)
         await Validator.checkPresetAssets(root, report, fakeAssets(samples()))
@@ -132,8 +145,8 @@ describe("Preset cloud assets", () => {
     })
     it("names every sample that is not in the cloud", async () => {
         const root = makeRepo({
-            "presets/Playfield/kit/meta.json": presetMeta({device: "Playfield", category: "instrument"}),
-            "presets/Playfield/kit/preset.odp": PLAYFIELD
+            "presets/playfield/kit/meta.json": presetMeta({device: "Playfield"}),
+            "presets/playfield/kit/preset.odp": PLAYFIELD
         })
         const report = Validator.run(root)
         await Validator.checkPresetAssets(root, report, fakeAssets(samples().slice(1)))
@@ -142,8 +155,8 @@ describe("Preset cloud assets", () => {
     })
     it("skips dev presets", async () => {
         const root = makeRepo({
-            "dev/presets/Playfield/kit/meta.json": presetMeta({device: "Playfield", category: "instrument"}),
-            "dev/presets/Playfield/kit/preset.odp": PLAYFIELD
+            "dev/presets/playfield/kit/meta.json": presetMeta({device: "Playfield"}),
+            "dev/presets/playfield/kit/preset.odp": PLAYFIELD
         })
         const report = Validator.run(root)
         await Validator.checkPresetAssets(root, report, fakeAssets([]))
@@ -175,25 +188,27 @@ describe("Preset build", () => {
     }
     it("writes one index per folder with the payloads next to it", () => {
         const out = buildOf({
-            ...delayAt("presets/Delay/flanger", {folder: "Modulation"}),
-            ...delayAt("dev/presets/Delay/next", {uuid: "99999999-2222-4333-8444-555555555555", name: "Next"})
+            ...delayAt("presets/delay/flanger", {folder: "Modulation"}),
+            ...delayAt("dev/presets/delay/next", {name: "Next"})
         })
         const read = (group: string) => JSON.parse(fs.readFileSync(path.join(out, group, "index.json"), "utf8")) as { presets: ReadonlyArray<CommunityPreset> }
         const [release] = read("presets").presets
-        assert.equal(release.uuid, "11111111-2222-4333-8444-555555555555")
+        assert.equal(release.uuid, uuidOf({path: "presets/delay/flanger"}))
+        assert.equal(release.kind, "device")
         assert.equal(release.device, "Delay")
         assert.equal(release.folder, "Modulation")
         assert.equal(release.hasTimeline, false)
-        assert.equal(release.source, "https://github.com/owner/repo/tree/main/presets/Delay/flanger")
-        assert.match(release.url, /^11111111-2222-4333-8444-555555555555-[0-9a-f]{12}\.odp$/)
+        assert.equal(release.source, "https://github.com/owner/repo/tree/main/presets/delay/flanger")
+        assert.match(release.url, new RegExp(`^${release.uuid}-[0-9a-f]{12}\\.odp$`))
         assert.deepEqual(new Uint8Array(fs.readFileSync(path.join(out, "presets", release.url))), DELAY)
         const [dev] = read("dev/presets").presets
         assert.equal(dev.name, "Next")
+        assert.equal(dev.uuid, uuidOf({path: "presets/delay/next"}))
         assert.ok(fs.existsSync(path.join(out, "dev/presets", dev.url)))
     })
     it("leaves the scripts and WebCLAP indices byte identical", () => {
         const without = buildOf(script)
-        const withPresets = buildOf({...script, ...delayAt("presets/Delay/flanger"), ...delayAt("dev/presets/Delay/next", {uuid: "99999999-2222-4333-8444-555555555555"})})
+        const withPresets = buildOf({...script, ...delayAt("presets/delay/flanger"), ...delayAt("dev/presets/delay/next")})
         for (const file of ["scripts/index.json", "wclaps/index.json"]) {
             assert.equal(fs.readFileSync(path.join(withPresets, file), "utf8"), fs.readFileSync(path.join(without, file), "utf8"))
         }
@@ -222,26 +237,26 @@ describe("Preset upload", () => {
 
 describe("Preset summary", () => {
     it("lists presets and dev presets a pull request touches", () => {
-        const report = validate({...delayAt("presets/Delay/flanger"), ...delayAt("dev/presets/Delay/next", {uuid: "99999999-2222-4333-8444-555555555555"})})
-        const markdown = Summary.markdown(report, ["presets/Delay/flanger/meta.json", "dev/presets/Delay/next/preset.odp", "presets/Delay/gone/meta.json"])
-        assert.match(markdown, /`presets\/Delay\/flanger`/)
-        assert.match(markdown, /`dev\/presets\/Delay\/next`/)
-        assert.match(markdown, /### Removed\n\n- `presets\/Delay\/gone`/)
+        const report = validate({...delayAt("presets/delay/flanger"), ...delayAt("dev/presets/delay/next")})
+        const markdown = Summary.markdown(report, ["presets/delay/flanger/meta.json", "dev/presets/delay/next/preset.odp", "presets/delay/gone/meta.json"])
+        assert.match(markdown, /`presets\/delay\/flanger`/)
+        assert.match(markdown, /`dev\/presets\/delay\/next`/)
+        assert.match(markdown, /### Removed\n\n- `presets\/delay\/gone`/)
     })
 })
 
 describe("Launch", () => {
     it("moves dev presets into presets and validates", () => {
-        const root = makeRepo({...delayAt("dev/presets/Delay/next")})
+        const root = makeRepo({...delayAt("dev/presets/delay/next")})
         const output = execFileSync("npx", ["tsx", path.join(RepoRoot, "tools/src/launch.ts"), "--root", root], {cwd: path.join(RepoRoot, "tools"), encoding: "utf8"})
-        assert.match(output, /→ presets\/Delay\/next/)
+        assert.match(output, /→ presets\/delay\/next/)
         assert.match(output, /1 presets moved, 0 errors/)
-        assert.ok(fs.existsSync(path.join(root, "presets/Delay/next/preset.odp")))
+        assert.ok(fs.existsSync(path.join(root, "presets/delay/next/preset.odp")))
         assert.ok(!fs.existsSync(path.join(root, "dev")))
     })
     it("refuses to overwrite a preset", () => {
-        const root = makeRepo({...delayAt("dev/presets/Delay/next"), ...delayAt("presets/Delay/next", {uuid: "99999999-2222-4333-8444-555555555555"})})
+        const root = makeRepo({...delayAt("dev/presets/delay/next"), ...delayAt("presets/delay/next")})
         assert.throws(() => execFileSync("npx", ["tsx", path.join(RepoRoot, "tools/src/launch.ts"), "--root", root], {cwd: path.join(RepoRoot, "tools"), stdio: "pipe"}))
-        assert.ok(fs.existsSync(path.join(root, "dev/presets/Delay/next/preset.odp")))
+        assert.ok(fs.existsSync(path.join(root, "dev/presets/delay/next/preset.odp")))
     })
 })
