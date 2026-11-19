@@ -14,9 +14,16 @@ export type DecodedPreset = {
     readonly hasTimeline: boolean
 }
 
+export type PresetAssets = {
+    readonly samples: ReadonlyArray<string>
+    readonly soundfonts: ReadonlyArray<string>
+}
+
 export interface CloudAssets {
     hasSample(uuid: string): Promise<boolean>
     hasSoundfont(uuid: string): Promise<boolean>
+    // bytes of the file, 0 if unknown
+    sizeOf(kind: "samples" | "soundfonts", uuid: string): Promise<number>
 }
 
 const Headers = {Origin: "https://opendaw.studio"}
@@ -56,6 +63,33 @@ export namespace Presets {
         }
     }
 
+    // reads only the name and uuid in front of every box, so it works for boxes this SDK does not know yet
+    export const scan = (bytes: Uint8Array): Checked<PresetAssets> => {
+        if (bytes.byteLength < 12) {return {ok: false, error: "preset.odp is too short to be a preset."}}
+        const input = new ByteArrayInput(toBuffer(bytes))
+        if (input.readInt() !== PresetHeader.MAGIC_HEADER_OPEN) {return {ok: false, error: "preset.odp is not an openDAW preset."}}
+        if (input.readInt() !== PresetHeader.FORMAT_VERSION) {return {ok: false, error: "Unsupported preset version."}}
+        const result = tryCatch(() => {
+            const samples: Array<string> = []
+            const soundfonts: Array<string> = []
+            const count = input.readInt()
+            for (let index = 0; index < count; index++) {
+                const length = input.readInt()
+                const box = new Int8Array(length)
+                input.readBytes(box)
+                const stream = new ByteArrayInput(box.buffer)
+                stream.readInt()
+                const name = stream.readString()
+                const uuid = UUID.toString(UUID.fromDataInput(stream))
+                if (name === "AudioFileBox") {samples.push(uuid)}
+                if (name === "SoundfontFileBox") {soundfonts.push(uuid)}
+            }
+            return {samples, soundfonts}
+        })
+        if (result.status === "failure") {return {ok: false, error: `preset.odp does not decode: ${String(result.error)}`}}
+        return {ok: true, value: result.value}
+    }
+
     export const hasDevice = (decoded: DecodedPreset, device: string): boolean =>
         decoded.boxNames.has(`${device}DeviceBox`) || decoded.boxNames.has(`${device}Box`)
 
@@ -81,8 +115,29 @@ export namespace Presets {
             hasSoundfont: async uuid => {
                 if (soundfonts.isEmpty()) {soundfonts = Option.wrap(uuidsOf("https://assets.opendaw.studio/soundfonts/index.json"))}
                 return (await soundfonts.unwrap()).has(uuid)
+            },
+            sizeOf: async (kind, uuid) => {
+                const response = await fetch(`https://assets.opendaw.studio/${kind}/${uuid}`, {method: "HEAD", headers: Headers})
+                const size = Number(response.headers.get("Content-Length") ?? 0)
+                return response.ok && Number.isFinite(size) ? size : 0
             }
         }
+    }
+
+    // every distinct cloud file of all presets once, the build sums them per preset
+    export const sizes = async (items: ReadonlyArray<Item>, assets: CloudAssets): Promise<ReadonlyMap<string, number>> => {
+        const sizes = new Map<string, number>()
+        for (const item of items) {
+            if (item.group !== "presets" || !fs.existsSync(fileOf(item))) {continue}
+            const scanned = scan(new Uint8Array(fs.readFileSync(fileOf(item))))
+            if (!scanned.ok) {continue}
+            for (const [kind, uuids] of [["samples", scanned.value.samples], ["soundfonts", scanned.value.soundfonts]] as const) {
+                for (const uuid of uuids) {
+                    if (!sizes.has(uuid)) {sizes.set(uuid, await assets.sizeOf(kind, uuid))}
+                }
+            }
+        }
+        return sizes
     }
 
     export const checkAssets = async (items: ReadonlyArray<Item>, report: Report, assets: CloudAssets): Promise<void> => {

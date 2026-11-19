@@ -41,7 +41,8 @@ const root = path.resolve(values.root)
 const out = isDefined(values.out) ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "community-"))
 if (values.build) {
     const report = Validator.run(root)
-    await Validator.checkPresetAssets(root, report, Presets.cloudAssets())
+    const assets = Presets.cloudAssets()
+    await Validator.checkPresetAssets(root, report, assets)
     const items = discover(root, new Report())
     const hasWclaps = items.some(item => item.group === "wclaps")
     const wclaps = hasWclaps && report.ok
@@ -55,7 +56,7 @@ if (values.build) {
     fs.rmSync(out, {recursive: true, force: true})
     Build.run(items, report, {
         root, out, repository: process.env.GITHUB_REPOSITORY ?? "andremichelle/opendaw-commons", now: new Date(),
-        wclaps, previousWclaps: hasWclaps ? await previousWclaps() : []
+        wclaps, previousWclaps: hasWclaps ? await previousWclaps() : [], assetSizes: await Presets.sizes(items, assets)
     })
     console.log(`built ${report.items.length} items into ${out}`)
     if (isDefined(values.screenshots)) {
