@@ -22,16 +22,31 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # a push that only touches presets/ and dev/presets/ skips the WebCLAPs and the screenshots
+      - name: Scope
+        id: scope
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if git diff --name-only "$BEFORE" HEAD > "$RUNNER_TEMP/changed.txt" 2>/dev/null \
+            && [ -s "$RUNNER_TEMP/changed.txt" ] && ! grep -qvE '^(dev/)?presets/' "$RUNNER_TEMP/changed.txt"; then
+            echo "presets_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "presets_only=false" >> "$GITHUB_OUTPUT"
+          fi
+          cat "$RUNNER_TEMP/changed.txt" 2>/dev/null || true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: tools/package-lock.json
       - uses: mymindstorm/setup-emsdk@v14
+        if: steps.scope.outputs.presets_only != 'true'
         with:
           version: 3.1.51
           actions-cache-folder: emsdk-cache
       - uses: actions/checkout@v4
+        if: steps.scope.outputs.presets_only != 'true'
         with:
           repository: free-audio/clap
           ref: a47f6badb49d948fd009998f28309cdab78979c9
@@ -44,13 +59,20 @@ jobs:
         working-directory: tools
         run: npm test
       - name: Install Chromium for the device screenshots
+        if: steps.scope.outputs.presets_only != 'true'
         working-directory: tools
         run: npx playwright install --with-deps chromium
       - name: Validate, build and render screenshots
         working-directory: tools
         env:
           CLAP_INCLUDE: ${{ github.workspace }}/.clap/include
-        run: npx tsx src/deploy.ts --root .. --build --out "$RUNNER_TEMP/community" --screenshots https://opendaw.studio
+          PRESETS_ONLY: ${{ steps.scope.outputs.presets_only }}
+        run: |
+          if [ "$PRESETS_ONLY" = "true" ]; then
+            npx tsx src/deploy.ts --root .. --build --out "$RUNNER_TEMP/community" --presets-only --drop-unchanged
+          else
+            npx tsx src/deploy.ts --root .. --build --out "$RUNNER_TEMP/community" --screenshots https://opendaw.studio --drop-unchanged
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: community
