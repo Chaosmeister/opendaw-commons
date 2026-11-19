@@ -1,0 +1,10 @@
+{
+  "name": "Tubular Glockenspiel",
+  "description": "A glockenspiel with tubular bars, recorded from G6 to A7 with quiet, medium and loud hits, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["glockenspiel", "bells", "mallets", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Mallets"
+}
