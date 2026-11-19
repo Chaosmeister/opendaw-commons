@@ -1,0 +1,10 @@
+{
+  "name": "Balafon Hard Mallet",
+  "description": "A West African balafon played with a hard mallet, recorded on six notes from C#3 to F5 in three velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["balafon", "mallets", "world", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Mallets"
+}
