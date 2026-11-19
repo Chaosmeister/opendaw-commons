@@ -1,6 +1,6 @@
 {
   "name": "Vibraphone Hard Mallets",
-  "description": "A vibraphone played with hard mallets, F2 to E5 in two velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "description": "A vibraphone played with hard mallets, recorded from F2 to E5 in two velocity layers, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
   "tags": ["vibraphone", "mallets", "vcsl"],
   "license": "CC0-1.0",

@@ -1,0 +1,10 @@
+{
+  "name": "Vibraphone Soft Mallets",
+  "description": "A vibraphone played with soft mallets, recorded from F2 to E5 in two velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["vibraphone", "mallets", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Mallets"
+}
