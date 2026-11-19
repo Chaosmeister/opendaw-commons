@@ -1,6 +1,6 @@
 {
   "name": "Folk Harp",
-  "description": "A folk harp, recorded from C1 to G#5 in whole tones in two velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "description": "A folk harp, recorded from C0 to G#4 in whole tones in two velocity layers, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
   "tags": ["harp", "plucked", "strings", "vcsl"],
   "license": "CC0-1.0",

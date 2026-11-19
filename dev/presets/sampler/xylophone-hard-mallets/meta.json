@@ -1,6 +1,6 @@
 {
   "name": "Xylophone Hard Mallets",
-  "description": "A xylophone played with hard mallets, recorded from G3 to C7 in two velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "description": "A xylophone played with hard mallets, recorded from G2 to C6 in two velocity layers, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
   "tags": ["xylophone", "mallets", "vcsl"],
   "license": "CC0-1.0",
