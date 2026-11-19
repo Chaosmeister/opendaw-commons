@@ -1,0 +1,10 @@
+{
+  "name": "Upright Piano",
+  "description": "A Yamaha upright piano with the sustain pedal down, recorded from C1 to C7 in three velocity layers with round robins, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["piano", "upright", "keys", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Keys"
+}
