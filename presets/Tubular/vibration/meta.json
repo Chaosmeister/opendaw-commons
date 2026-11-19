@@ -1,0 +1,14 @@
+{
+  "uuid": "307558ba-7c3b-4e06-90fc-354bbed2f639",
+  "name": "Vibration",
+  "description": "Vibraphone like sound",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Tubular"
+}

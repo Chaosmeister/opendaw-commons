@@ -1,0 +1,14 @@
+{
+  "uuid": "6350d997-a0c2-4998-909d-9ab62a1b2c0c",
+  "name": "Pan Pipe 8",
+  "description": "Virtual panpipe",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Tubular"
+}

@@ -1,0 +1,14 @@
+{
+  "uuid": "4baddc0b-213a-4d5f-994a-6bbe3e286521",
+  "name": "Cut High",
+  "description": "A low-pass filter at 18 kHz that removes the highest frequencies.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "Revamp"
+}

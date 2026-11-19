@@ -1,0 +1,14 @@
+{
+  "uuid": "17801592-2ad6-4d17-89c7-18e57c4ef134",
+  "name": "Woofer",
+  "description": "Brassy synth sound",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Tubular"
+}

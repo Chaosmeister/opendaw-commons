@@ -17,9 +17,19 @@ export type Meta = {
     readonly credits?: string
 }
 
+export type PresetCategory = "instrument" | "audio-effect" | "midi-effect" | "audio-unit"
+
+export type PresetMeta = Meta & {
+    readonly uuid: string
+    readonly category: PresetCategory
+    readonly device: string
+    readonly folder?: string
+}
+
 const SchemaIds: Record<Group, string> = {
     scripts: "script",
-    wclaps: "wclap"
+    wclaps: "wclap",
+    presets: "preset"
 }
 
 const schemaUrl = (name: string): string => `https://assets.opendaw.studio/community/schemas/${name}.meta.json`

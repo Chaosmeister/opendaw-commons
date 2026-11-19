@@ -3,7 +3,8 @@ import path from "node:path"
 import {isDefined, Optional} from "@opendaw/lib-std"
 import {DeviceScripts} from "./DeviceScripts.ts"
 import {checkFiles, discover, formatBytes, Item, scriptFileOf, sizeOfTree} from "./Layout.ts"
-import {Meta, MetaValidator} from "./Meta.ts"
+import {Meta, MetaValidator, PresetMeta} from "./Meta.ts"
+import {CloudAssets, Presets} from "./Presets.ts"
 import {ProjectScripts} from "./ProjectScripts.ts"
 import {ItemDetails, Report} from "./Report.ts"
 import {BuiltWclap, Wclaps} from "./Wclaps.ts"
@@ -34,8 +35,42 @@ const checkProjectScripts = (items: ReadonlyArray<Item>, report: Report): void =
     ProjectScripts.check(scripts).forEach((messages, where) => messages.forEach(message => report.error(where, message)))
 }
 
-const checkItem = (item: Item, report: Report): ItemDetails => {
+const checkPreset = (item: Item, meta: Optional<Meta>, report: Report): ItemDetails => {
+    if (!isDefined(meta)) {return {}}
+    const {uuid, device} = meta as PresetMeta
+    const where = `${item.path}/meta.json`
+    if (device !== item.device) {report.error(where, `device is ${device} but the preset lies in the ${item.device} folder.`)}
+    if (item.dev === true) {return {uuid, device, stage: "dev"}}
+    const decoded = Presets.read(item)
+    if (!decoded.ok) {
+        report.error(`${item.path}/preset.odp`, decoded.error)
+        return {uuid, device}
+    }
+    if (!Presets.hasDevice(decoded.value, device)) {
+        report.error(`${item.path}/preset.odp`, `The preset holds no ${device} device.`)
+    }
+    return {uuid, device, timeline: decoded.value.hasTimeline}
+}
+
+const checkPresetUuids = (items: ReadonlyArray<Item>, metas: ReadonlyMap<string, Meta>, report: Report): void => {
+    const owners = new Map<string, string>()
+    for (const item of items.filter(item => item.group === "presets")) {
+        const meta = metas.get(item.path)
+        if (!isDefined(meta)) {continue}
+        const {uuid} = meta as PresetMeta
+        const owner = owners.get(uuid)
+        if (isDefined(owner)) {
+            report.error(`${item.path}/meta.json`, `uuid ${uuid} is already used by ${owner}. Every preset needs its own uuid.`)
+        } else {
+            owners.set(uuid, item.path)
+        }
+    }
+}
+
+const checkItem = (item: Item, meta: Optional<Meta>, report: Report): ItemDetails => {
     switch (item.group) {
+        case "presets":
+            return checkPreset(item, meta, report)
         case "scripts":
             return item.target === "project" ? {} : checkDeviceScript(item, report)
         case "wclaps": {
@@ -45,25 +80,37 @@ const checkItem = (item: Item, report: Report): ItemDetails => {
     }
 }
 
+const groupOf = (item: Item): string => {
+    if (item.group === "presets") {return `${item.dev === true ? "dev/" : ""}presets/${item.device}`}
+    return isDefined(item.target) ? `${item.group}/${item.target}` : item.group
+}
+
 export namespace Validator {
     export const run = (root: string): Report => {
         const report = new Report()
         const metas = new MetaValidator(root)
         const items = discover(root, report)
+        const checked = new Map<string, Meta>()
         for (const item of items) {
             checkFiles(item, report)
             const meta: Optional<Meta> = metas.check(item, report)
-            const details = checkItem(item, report)
+            if (isDefined(meta)) {checked.set(item.path, meta)}
+            const details = checkItem(item, meta, report)
             report.item({
                 path: item.path,
-                group: isDefined(item.target) ? `${item.group}/${item.target}` : item.group,
+                group: groupOf(item),
                 name: meta?.name ?? item.slug,
                 details
             })
         }
         checkProjectScripts(items.filter(item => item.target === "project"), report)
+        checkPresetUuids(items, checked, report)
         return report
     }
+
+    // needs the network, the samples and soundfonts of every preset must be in the openDAW cloud
+    export const checkPresetAssets = async (root: string, report: Report, assets: CloudAssets): Promise<void> =>
+        Presets.checkAssets(discover(root, new Report()), report, assets)
 
     // needs emcc and the CLAP headers, the CI runs it, a local check without them skips it
     export const buildWclaps = async (root: string, report: Report, clapInclude: string): Promise<ReadonlyMap<string, BuiltWclap>> => {

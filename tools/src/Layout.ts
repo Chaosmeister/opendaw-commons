@@ -3,17 +3,21 @@ import path from "node:path"
 import {isDefined, Optional} from "@opendaw/lib-std"
 import {Report} from "./Report.ts"
 
-export type Group = "scripts" | "wclaps"
+export type Group = "scripts" | "wclaps" | "presets"
 
 export type ScriptTarget = "project" | "werkstatt" | "apparat" | "spielwerk"
 
-export const Groups: ReadonlyArray<Group> = ["scripts", "wclaps"]
+export const Groups: ReadonlyArray<Group> = ["scripts", "wclaps", "presets"]
+
+export const PresetFolders = {release: "presets", dev: "dev/presets"} as const
 
 export const ScriptTargets: ReadonlyArray<ScriptTarget> = ["project", "werkstatt", "apparat", "spielwerk"]
 
 export type Item = {
     readonly group: Group
     readonly target: Optional<ScriptTarget>
+    readonly device?: string
+    readonly dev?: boolean
     readonly slug: string
     readonly path: string
     readonly absolute: string
@@ -25,10 +29,12 @@ const MiB = 1024 * KiB
 export const SizeLimits = {
     script: 256 * KiB,
     meta: 16 * KiB,
+    preset: MiB,
     wclapSource: 20 * MiB
 } as const
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const DEVICE = /^[A-Z][A-Za-z0-9]{0,63}$/
 const MAX_SLUG_LENGTH = 64
 const IGNORED = new Set([".gitkeep", ".DS_Store"])
 
@@ -40,6 +46,11 @@ const filesOf = (item: Item): ReadonlyArray<FileRule> => {
             return [{name: "meta.json", required: true, limit: SizeLimits.meta}]
         case "wclaps":
             return [{name: "meta.json", required: true, limit: SizeLimits.meta}]
+        case "presets":
+            return [
+                {name: "meta.json", required: true, limit: SizeLimits.meta},
+                {name: "preset.odp", required: true, limit: SizeLimits.preset}
+            ]
     }
 }
 
@@ -79,9 +90,34 @@ const collectFolder = (root: string, relative: string, group: Group, target: Opt
     return items
 }
 
+const collectPresets = (root: string, relative: string, dev: boolean, report: Report): ReadonlyArray<Item> => {
+    const absolute = path.join(root, relative)
+    if (!fs.existsSync(absolute)) {return []}
+    const items: Array<Item> = []
+    for (const entry of listEntries(absolute)) {
+        if (!entry.isDirectory() || !DEVICE.test(entry.name)) {
+            report.error(`${relative}/${entry.name}`, "Presets go into a folder named after their device key, for example Vaporisateur.")
+            continue
+        }
+        items.push(...collectFolder(root, `${relative}/${entry.name}`, "presets", undefined, report)
+            .map(item => ({...item, device: entry.name, dev})))
+    }
+    return items
+}
+
 export const discover = (root: string, report: Report): ReadonlyArray<Item> => {
     const items: Array<Item> = []
+    const dev = path.join(root, "dev")
+    if (fs.existsSync(dev)) {
+        listEntries(dev).filter(entry => entry.name !== "presets")
+            .forEach(entry => report.error(`dev/${entry.name}`, "Only presets/ belongs into dev/."))
+    }
     for (const group of Groups) {
+        if (group === "presets") {
+            items.push(...collectPresets(root, PresetFolders.release, false, report))
+            items.push(...collectPresets(root, PresetFolders.dev, true, report))
+            continue
+        }
         if (group === "scripts") {
             const scripts = path.join(root, group)
             if (!fs.existsSync(scripts)) {continue}

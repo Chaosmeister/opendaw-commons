@@ -2,12 +2,13 @@ import {Report} from "./Report.ts"
 
 const escape = (text: string): string => text.replaceAll("|", "\\|").replaceAll("\n", " ")
 
-const itemOf = (file: string): string => {
-    const parts = file.split("/")
-    return (parts[0] === "scripts" ? parts.slice(0, 3) : parts.slice(0, 2)).join("/")
-}
+const depthOf = (file: string): number =>
+    file.startsWith("dev/presets/") ? 4 : file.startsWith("scripts/") || file.startsWith("presets/") ? 3 : 2
 
-const isContent = (file: string): boolean => /^(scripts|wclaps)\/[^/]+\//.test(file)
+const itemOf = (file: string): string => file.split("/").slice(0, depthOf(file)).join("/")
+
+const isContent = (file: string): boolean =>
+    /^(scripts|wclaps|presets|dev\/presets)\/[^/]+\//.test(file) && file.split("/").length > depthOf(file)
 
 export namespace Summary {
     export const MARKER = "<!-- opendaw-commons-check -->"

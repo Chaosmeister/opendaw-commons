@@ -1,0 +1,14 @@
+{
+  "uuid": "41e8a1fc-b9a5-4160-a9fb-d64bfb673f09",
+  "name": "80s String",
+  "description": "Synthwave starting point",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Apparat"
+}

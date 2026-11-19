@@ -1,0 +1,14 @@
+{
+  "uuid": "7ca3dfdc-cbb5-43be-8136-6e42a3afd4a2",
+  "name": "Soft Wall",
+  "description": "Gentle 3:1 compression from -6 dB with a soft knee and automatic makeup gain.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "Compressor"
+}

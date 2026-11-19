@@ -1,0 +1,14 @@
+{
+  "uuid": "e0d1bb0d-64e3-4547-9e82-ea4bfe27e2c8",
+  "name": "Large Plate",
+  "description": "A long and bright plate reverb with 300 ms pre-delay.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "DattorroReverb"
+}

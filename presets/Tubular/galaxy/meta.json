@@ -1,0 +1,14 @@
+{
+  "uuid": "af67ac23-d6a7-45e1-ba26-e9f1ee352ad7",
+  "name": "Galaxy",
+  "description": "Spacy tune bass with a soft tail",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Tubular"
+}

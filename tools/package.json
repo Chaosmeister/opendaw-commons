@@ -9,6 +9,7 @@
     "validate": "tsx src/validate.ts --root ..",
     "test": "tsx --test test/*.test.ts",
     "lint": "tsc --noEmit",
+    "launch-presets": "tsx src/launch.ts --root ..",
     "build-indices": "tsx src/deploy.ts --root .. --build --out ../dist",
     "deploy": "tsx src/deploy.ts --root .. --build --upload"
   },

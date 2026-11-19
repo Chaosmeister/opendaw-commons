@@ -6,6 +6,7 @@ import SftpClient from "ssh2-sftp-client"
 import {asDefined, isDefined, panic} from "@opendaw/lib-std"
 import {Build, CommunityWclap} from "./Build.ts"
 import {discover} from "./Layout.ts"
+import {Presets} from "./Presets.ts"
 import {Report} from "./Report.ts"
 import {Screenshots} from "./Screenshots.ts"
 import {sftpRemote, Upload} from "./Upload.ts"
@@ -40,6 +41,7 @@ const root = path.resolve(values.root)
 const out = isDefined(values.out) ? path.resolve(values.out) : fs.mkdtempSync(path.join(os.tmpdir(), "community-"))
 if (values.build) {
     const report = Validator.run(root)
+    await Validator.checkPresetAssets(root, report, Presets.cloudAssets())
     const items = discover(root, new Report())
     const hasWclaps = items.some(item => item.group === "wclaps")
     const wclaps = hasWclaps && report.ok

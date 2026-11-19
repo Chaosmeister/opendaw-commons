@@ -1,0 +1,14 @@
+{
+  "uuid": "03b21182-01f7-49be-aa3b-ded8f00065ea",
+  "name": "Ring Modulator",
+  "description": "Multiplies the signal with a sine wave (440 Hz, adjustable) for metallic, bell like tones.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "Werkstatt"
+}

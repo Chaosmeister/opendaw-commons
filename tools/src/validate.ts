@@ -2,6 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import {parseArgs} from "node:util"
 import {isDefined} from "@opendaw/lib-std"
+import {Presets} from "./Presets.ts"
 import {Summary} from "./Summary.ts"
 import {Validator} from "./Validator.ts"
 import {Wclaps} from "./Wclaps.ts"
@@ -18,6 +19,7 @@ const {values} = parseArgs({
 
 const root = path.resolve(values.root)
 const report = Validator.run(root)
+await Validator.checkPresetAssets(root, report, Presets.cloudAssets())
 if (values["build-wclaps"]) {
     const built = await Validator.buildWclaps(root, report, Wclaps.clapIncludeFromEnv())
     const wclapOut = values["wclap-out"]
