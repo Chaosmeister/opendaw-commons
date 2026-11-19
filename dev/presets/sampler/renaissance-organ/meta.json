@@ -1,6 +1,6 @@
 {
   "name": "Renaissance Organ",
-  "description": "A Renaissance chamber organ with all stops drawn, recorded in the room from C2 to E6 in whole tones, looped while the key is held, from the Versilian Community Sample Library (VCSL).",
+  "description": "A Renaissance chamber organ with all stops drawn, recorded in the room from C1 to E5 in whole tones, looped while the key is held, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
   "tags": ["organ", "renaissance", "keys", "vcsl"],
   "license": "CC0-1.0",

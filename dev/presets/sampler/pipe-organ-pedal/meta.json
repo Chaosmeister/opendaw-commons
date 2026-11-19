@@ -1,6 +1,6 @@
 {
   "name": "Pipe Organ Pedal",
-  "description": "The loud pedal division of a church pipe organ, deep bass recorded from C1 to F#3 in minor thirds, looped while the key is held, from the Versilian Community Sample Library (VCSL).",
+  "description": "The loud pedal division of a church pipe organ, deep bass recorded from C0 to F#2 in minor thirds, looped while the key is held, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
   "tags": ["organ", "pipe-organ", "bass", "keys", "vcsl"],
   "license": "CC0-1.0",

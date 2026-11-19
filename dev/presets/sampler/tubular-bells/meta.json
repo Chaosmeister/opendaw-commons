@@ -1,6 +1,6 @@
 {
   "name": "Tubular Bells",
-  "description": "Orchestral tubular bells, recorded from C3 to E4 in whole tones with a soft and a loud hit, from the Versilian Community Sample Library (VCSL).",
+  "description": "Orchestral tubular bells, recorded from C2 to E3 in whole tones with a soft and a loud hit, from the Versilian Community Sample Library (VCSL).",
   "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
   "tags": ["bells", "chimes", "orchestral", "vcsl"],
   "license": "CC0-1.0",
