@@ -1,0 +1,10 @@
+{
+  "name": "Cowbells",
+  "description": "Two cowbells as a kit on the keys C3 to F3: open, muted and double strokes in velocity layers, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["cowbell", "percussion", "kit", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Drums"
+}
