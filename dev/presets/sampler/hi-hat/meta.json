@@ -1,0 +1,10 @@
+{
+  "name": "Hi-Hat",
+  "description": "A hi-hat as a kit on the keys C3 to E3: closed hits in four velocity layers, pedal, loose, open-close and open, closed and open choke each other, with round robins, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["hi-hat", "cymbal", "drums", "kit", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Drums"
+}
