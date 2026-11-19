@@ -22,7 +22,9 @@ const repo = () => {
         "scripts/werkstatt/clip/meta.json": JSON.stringify({name: "Clip", description: "Clips.", author: {name: "T"}, tags: [], license: "CC0-1.0"}),
         "scripts/werkstatt/clip/script.js": "// @label Clip\nclass Processor {}\n"
     })
-    const git = (args: ReadonlyArray<string>) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", ...args], {cwd: root, stdio: "pipe"})
+    const env = {...process.env, GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z", GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z"}
+    const git = (args: ReadonlyArray<string>) =>
+        execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", ...args], {cwd: root, env, stdio: "pipe"})
     git(["init", "-q"])
     git(["add", "-A"])
     git(["commit", "-q", "-m", "init"])
