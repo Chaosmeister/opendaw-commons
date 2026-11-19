@@ -1,0 +1,14 @@
+{
+  "uuid": "f816e5b5-24ba-4052-8c92-6fa22d9250bf",
+  "name": "Curved Air",
+  "description": "Dreamy scifi pad",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Tubular"
+}

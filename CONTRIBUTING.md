@@ -71,6 +71,48 @@ built bundle is attached to the check's run as `wclap-bundles` (`.wasm` for a ba
 bundle with a page). To try it before the merge, download and unzip it, add a WebCLAP device in the Studio and pick
 the file with Load Plugin, Import WebCLAP...
 
+### Presets
+
+```
+presets/<device>/<slug>/meta.json
+presets/<device>/<slug>/preset.odp
+dev/presets/<device>/<slug>/meta.json
+dev/presets/<device>/<slug>/preset.odp
+```
+
+`<device>` is the device key, for example `Vaporisateur`, `Delay` or `Playfield`. A rack preset lies in the folder of
+its instrument. `preset.odp` is the file the Studio saves for a preset.
+
+1. `presets/` holds presets that work with the openDAW release on opendaw.studio. The check decodes every preset,
+   requires the device of its folder, and requires that every sample and soundfont it plays is in the openDAW cloud.
+   Presets never bring samples of their own.
+2. `dev/presets/` collects presets that need a feature only the next release has. Only `meta.json` is checked, the
+   preset is tested on dev.opendaw.studio. On the day the release goes live, `npm run launch-presets` moves them all
+   into `presets/` and runs the full check.
+
+A preset's `meta.json` carries its own `uuid`, written once when the preset is added and never changed, so the
+preset keeps its id when it moves out of `dev/` or gets a new slug.
+
+```json
+{
+  "uuid": "4f0c2a8e-6b1d-4c3a-9e57-2d8b1f6a3c90",
+  "name": "Warm Pad",
+  "description": "A slow, warm pad with a soft filter sweep.",
+  "author": {"name": "Jane Doe", "github": "janedoe"},
+  "tags": ["pad"],
+  "license": "CC0-1.0",
+  "category": "instrument",
+  "device": "Vaporisateur",
+  "folder": "Pads"
+}
+```
+
+1. `category` is `instrument`, `audio-effect`, `midi-effect` or `audio-unit` (a rack).
+2. `device` matches the folder.
+3. `license` is `CC0-1.0` or `CC-BY-SA-4.0`. CC-BY-SA needs `credits`. A preset that plays CC-BY-SA samples says in
+   its description that songs made with it fall under CC-BY-SA.
+4. `folder` is optional and places the preset in a folder of the preset browser, `Pads` or `Keys/Pianos`.
+
 ## meta.json
 
 You only write what a human knows. The CI computes everything else (id, declared parameters, size).
@@ -101,11 +143,13 @@ items small. The validator enforces these limits per item.
 
 1. Script: 256 KB
 2. WebCLAP `source/`: 20 MB
+3. Preset: 1 MB
 
 ## License
 
 By opening a pull request you agree that your contribution is released under [CC0 1.0](LICENSE). WebCLAP source
-code may use any OSI approved license. Sounds a WebCLAP ships are always CC0.
+code may use any OSI approved license. Sounds a WebCLAP ships are always CC0. Presets are CC0 or
+[CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), as their `meta.json` says.
 
 ## Check locally
 

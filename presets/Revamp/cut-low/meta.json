@@ -1,0 +1,14 @@
+{
+  "uuid": "6db78630-de08-42b8-b152-eef35270c90c",
+  "name": "Cut Low",
+  "description": "A high-pass filter at 80 Hz that removes rumble and sub bass.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "Revamp"
+}

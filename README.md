@@ -1,6 +1,6 @@
 # openDAW Commons
 
-Community content for [openDAW](https://opendaw.studio): scripts and WebCLAP plugins.
+Community content for [openDAW](https://opendaw.studio): scripts, WebCLAP plugins and presets.
 
 Anyone can contribute with a pull request. After a merge the content shows up in the Studio in the "Community"
 folder, with no Studio release needed.
@@ -19,6 +19,8 @@ The Studio never reads this repo directly. It only reads the generated indices.
 ```
 scripts/<target>/<slug>/             meta.json, script.ts or script.js
 wclaps/<slug>/                       meta.json, source/
+presets/<device>/<slug>/             meta.json, preset.odp
+dev/presets/<device>/<slug>/         meta.json, preset.odp, for the next release
 schemas/                             JSON schemas for every meta.json
 ```
 
@@ -27,7 +29,8 @@ schemas/                             JSON schemas for every meta.json
 ## License
 
 Everything in this repo is [CC0 1.0](LICENSE), except WebCLAP source code, which may use any OSI approved
-license. Sounds a WebCLAP ships are always CC0.
+license, and presets, which are CC0 or [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) as their
+`meta.json` says. Sounds a WebCLAP ships are always CC0.
 
 To add your own, follow the step by step guide in the
 [Community Scripts manual](https://opendaw.studio/manuals/community-scripts) or the

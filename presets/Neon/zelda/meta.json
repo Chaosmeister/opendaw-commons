@@ -1,0 +1,14 @@
+{
+  "uuid": "c8812a4d-ad4c-4abe-a9f0-1ae5c6e8aac7",
+  "name": "Zelda",
+  "description": "Zelda inspired sound sequence",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Neon"
+}

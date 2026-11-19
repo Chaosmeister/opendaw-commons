@@ -1,0 +1,14 @@
+{
+  "uuid": "c52efbcd-4e74-4c57-b463-7583f3e08c26",
+  "name": "Bass Roads",
+  "description": "Close to fm piano sound",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Tubular"
+}

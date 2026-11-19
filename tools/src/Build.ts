@@ -2,9 +2,10 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import {execFileSync} from "node:child_process"
-import {isAbsent, isDefined} from "@opendaw/lib-std"
-import {Item, scriptFileOf} from "./Layout.ts"
-import {Author, Meta} from "./Meta.ts"
+import {isAbsent, isDefined, Optional} from "@opendaw/lib-std"
+import {Item, PresetFolders, scriptFileOf} from "./Layout.ts"
+import {Author, Meta, PresetCategory, PresetMeta} from "./Meta.ts"
+import {Presets} from "./Presets.ts"
 import {ProjectScripts} from "./ProjectScripts.ts"
 import {ItemDetails, Report} from "./Report.ts"
 import {BuiltWclap, WclapPlugin} from "./Wclaps.ts"
@@ -46,6 +47,26 @@ export type CommunityWclap = {
     readonly license: string
     readonly plugins: ReadonlyArray<WclapPlugin>
     readonly supersedes: ReadonlyArray<string>
+}
+
+export type CommunityPreset = {
+    readonly uuid: string
+    readonly slug: string
+    readonly name: string
+    readonly description: string
+    readonly author: Author
+    readonly tags: ReadonlyArray<string>
+    readonly license: string
+    readonly credits: string
+    readonly category: PresetCategory
+    readonly device: string
+    readonly folder: string
+    readonly hasTimeline: Optional<boolean>
+    readonly url: string
+    readonly size: number
+    readonly created: number
+    readonly modified: number
+    readonly source: string
 }
 
 export type BuildOptions = {
@@ -109,6 +130,20 @@ const writeIndex = (out: string, group: string, key: string, entries: ReadonlyAr
     fs.writeFileSync(path.join(out, group, "index.json"), JSON.stringify(index, null, 2) + "\n")
 }
 
+// dev presets may use boxes this SDK does not know yet, then the Studio reads the timeline from the file itself
+const presetOf = (item: Item, group: string, options: BuildOptions): CommunityPreset => {
+    const bytes = new Uint8Array(fs.readFileSync(Presets.fileOf(item)))
+    const {uuid, name, description, author, tags, license, credits, category, device, folder} = readMeta(item) as PresetMeta
+    const decoded = Presets.decode(bytes)
+    return {
+        uuid, slug: item.slug, name, description, author, tags, license, credits: credits ?? "", category, device,
+        folder: folder ?? "", hasTimeline: decoded.ok ? decoded.value.hasTimeline : undefined,
+        ...writePayload(options.out, group, uuid, "odp", bytes),
+        ...commitTimes(options.root, item),
+        source: `https://github.com/${options.repository}/tree/main/${item.path}`
+    }
+}
+
 export namespace Build {
     // the report must come from a passing Validator.run over the same root and items
     export const run = (items: ReadonlyArray<Item>, report: Report, options: BuildOptions): void => {
@@ -142,5 +177,11 @@ export namespace Build {
         fs.writeFileSync(path.join(options.out, "wclaps", "index.json"), JSON.stringify({
             version: 1, updatedAt: options.now.toISOString(), folders: [{name: "Community", wclaps: wclaps.toSorted(byName)}]
         }, null, 2) + "\n")
+        for (const dev of [false, true]) {
+            const group = dev ? PresetFolders.dev : PresetFolders.release
+            const presets = items.filter(item => item.group === "presets" && (item.dev === true) === dev)
+                .map(item => presetOf(item, group, options))
+            writeIndex(options.out, group, "presets", presets.toSorted(byName), options.now)
+        }
     }
 }

@@ -1,0 +1,14 @@
+{
+  "uuid": "67ca3f16-510a-480b-bca6-249c7cf59719",
+  "name": "Hard Pump",
+  "description": "A steep volume pump in time with the song, like hard sidechain ducking.",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "Tidal"
+}

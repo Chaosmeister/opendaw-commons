@@ -1,0 +1,14 @@
+{
+  "uuid": "7bd91960-410a-4c41-86c7-33d8d8d20ea0",
+  "name": "Vocal EQ",
+  "description": "Vocal EQ Cheat Sheet",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "audio-effect",
+  "device": "Revamp"
+}

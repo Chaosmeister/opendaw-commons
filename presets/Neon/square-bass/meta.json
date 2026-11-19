@@ -1,0 +1,14 @@
+{
+  "uuid": "26b0b451-fe5a-4c97-9d3e-557cd82c7ab5",
+  "name": "Square Bass",
+  "description": "PluginBoutique VirtualCZ",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Neon"
+}

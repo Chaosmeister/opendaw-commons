@@ -1,0 +1,14 @@
+{
+  "uuid": "6023bee2-4a10-4604-b0a9-d3681294ef2f",
+  "name": "Brass",
+  "description": "PluginBoutique VirtualCZ",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Neon"
+}

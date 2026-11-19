@@ -1,0 +1,14 @@
+{
+  "uuid": "5afe353b-4723-42c8-aebe-03e2ae5ec3de",
+  "name": "Rhode",
+  "description": "Sample based Rhode piano",
+  "author": {
+    "name": "openDAW",
+    "url": "https://opendaw.studio"
+  },
+  "tags": [],
+  "license": "CC-BY-SA-4.0",
+  "credits": "openDAW, https://opendaw.studio",
+  "category": "instrument",
+  "device": "Nano"
+}

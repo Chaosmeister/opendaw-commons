@@ -61,7 +61,7 @@ describe("Build", () => {
         const index = read<{ version: number, updatedAt: string, scripts: ReadonlyArray<CommunityScript> }>("scripts")
         assert.equal(index.version, 1)
         assert.equal(index.updatedAt, "2026-10-22T12:00:00.000Z")
-        assert.ok(!fs.existsSync(path.join(out, "presets")))
+        assert.deepEqual(read<{ presets: unknown }>("presets").presets, [])
         const scripts = index.scripts
         assert.deepEqual(scripts.map(script => script.name), ["Clip", "Hello"])
         const hello = scripts[1]
