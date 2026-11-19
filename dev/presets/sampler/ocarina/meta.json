@@ -1,0 +1,10 @@
+{
+  "name": "Ocarina",
+  "description": "A clay ocarina with vibrato and release sounds, recorded from A4 to C6, looped while the key is held, from the Versilian Community Sample Library (VCSL).",
+  "author": {"name": "Versilian Studios", "github": "sgossner", "url": "https://versilian-studios.com"},
+  "tags": ["ocarina", "flute", "wind", "vcsl"],
+  "license": "CC0-1.0",
+  "credits": "Versilian Community Sample Library (VCSL) by Versilian Studios, https://github.com/sgossner/VCSL",
+  "device": "Sampler",
+  "folder": "Winds"
+}
