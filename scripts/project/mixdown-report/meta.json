@@ -1,0 +1,16 @@
+{
+  "name": "Mixdown Report",
+  "description": "Renders the current project, measures the rendered audio (integrated loudness in LUFS, true peak, full-scale samples) and shows how far it is from common loudness targets. Saves the untouched mixdown as a 32-bit float wav file. Measures only, never changes the audio.",
+  "author": {
+    "name": "Nathan Renting",
+    "github": "Audio-Launch",
+    "url": "https://audiolab.tools"
+  },
+  "tags": [
+    "utility",
+    "export",
+    "loudness",
+    "education"
+  ],
+  "license": "CC0-1.0"
+}
