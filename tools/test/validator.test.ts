@@ -128,7 +128,7 @@ describe("device scripts", () => {
         const examples: Record<string, ReadonlyArray<string>> = {
             werkstatt: ["parametric-eq", "alienator", "xy-filter"],
             apparat: ["wavetable", "grain-synthesizer", "tonematrix"],
-            spielwerk: ["probability-gate", "random-humanizer", "pulsate"]
+            spielwerk: ["probability-gate", "echo-note-delay", "pulsate"]
         }
         for (const [target, slugs] of Object.entries(examples)) {
             for (const slug of slugs) {
